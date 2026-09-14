@@ -21,8 +21,8 @@ export function useKeyboardShortcuts() {
         setColors(generateHarmoniousPalette(useGradientStore.getState().colors))
         return
       }
-      if (ctrl && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return }
-      if (ctrl && e.key === 'z' &&  e.shiftKey) { e.preventDefault(); redo(); return }
+      if (ctrl && e.key === 'z' && !e.shiftKey && !isTypingTarget(e)) { e.preventDefault(); undo(); return }
+      if (ctrl && e.key === 'z' &&  e.shiftKey && !isTypingTarget(e)) { e.preventDefault(); redo(); return }
       if (e.key === 'p' && !isTypingTarget(e))  { e.preventDefault(); setPlaying(!isPlaying) }
     }
 
