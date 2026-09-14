@@ -7,21 +7,21 @@ import type {
 import { generateId } from '../utils/color'
 
 export const DEFAULT_PARAMETERS: ShaderParameters = {
-  scale:    1.7,
-  curl:     1.05,
-  drift:    0.5,
-  openness: 0.28,
+  scale:    1.6,
+  curl:     1.2,
+  drift:    0.55,
+  openness: 0.0,
   seed:     0,
   speed:    1.0,
-  grain:    0.08,
+  grain:    0.18,
 }
 
 export const DEFAULT_COLORS: ColorEntry[] = [
-  { id: generateId(), hex: '#FFE7F0', locked: false },
-  { id: generateId(), hex: '#EAB5E6', locked: false },
-  { id: generateId(), hex: '#E2D3E4', locked: false },
-  { id: generateId(), hex: '#E0A5DA', locked: false },
-  { id: generateId(), hex: '#F6A7D6', locked: false },
+  { id: generateId(), hex: '#F9C5D1', locked: false }, // soft rose
+  { id: generateId(), hex: '#C5AEF0', locked: false }, // lavender
+  { id: generateId(), hex: '#A8D8EA', locked: false }, // sky
+  { id: generateId(), hex: '#B5EAD7', locked: false }, // mint
+  { id: generateId(), hex: '#FFDAC1', locked: false }, // peach
 ]
 
 function snapshot(state: GradientState): HistoryEntry {
