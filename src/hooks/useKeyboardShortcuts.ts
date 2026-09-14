@@ -23,10 +23,10 @@ export function useKeyboardShortcuts() {
       }
       if (ctrl && e.key === 'z' && !e.shiftKey && !isTypingTarget(e)) { e.preventDefault(); undo(); return }
       if (ctrl && e.key === 'z' &&  e.shiftKey && !isTypingTarget(e)) { e.preventDefault(); redo(); return }
-      if (e.key === 'p' && !isTypingTarget(e))  { e.preventDefault(); setPlaying(!isPlaying) }
+      if (e.key.toLowerCase() === 'p' && !isTypingTarget(e))  { e.preventDefault(); setPlaying(!isPlaying) }
     }
 
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [undo, redo, setPlaying, isPlaying, colors, setColors, pushHistory])
+  }, [undo, redo, setPlaying, isPlaying, setColors, pushHistory])
 }

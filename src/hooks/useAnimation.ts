@@ -3,8 +3,8 @@ import { useEffect, useRef } from 'react'
 import type { ShaderParameters, ShaderType, ColorEntry } from '../types/gradient'
 
 interface UseAnimationProps {
-  drawFrame:      (time: number) => void
-  updateUniforms: (params: ShaderParameters, colors: ColorEntry[], shader: ShaderType) => void
+  drawFrame:      () => void
+  updateUniforms: (params: ShaderParameters, colors: ColorEntry[], shader: ShaderType, time: number) => void
   resizeCanvas:   () => void
   params:         ShaderParameters
   colors:         ColorEntry[]
@@ -53,8 +53,8 @@ export function useAnimation({
       const elapsed = now - startRef.current
       pausedAtRef.current = elapsed
       resizeCanvas()
-      updateUniforms(paramsRef.current, colorsRef.current, shaderRef.current)
-      drawFrame(elapsed)
+      updateUniforms(paramsRef.current, colorsRef.current, shaderRef.current, elapsed)
+      drawFrame()
       rafRef.current = requestAnimationFrame(frame)
     }
 

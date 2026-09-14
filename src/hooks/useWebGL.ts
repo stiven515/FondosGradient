@@ -4,6 +4,7 @@ import type { RefObject } from 'react'
 import type { ShaderParameters, ShaderType, ColorEntry } from '../types/gradient'
 import { shaders } from '../shaders'
 import { hexToRgbNorm } from '../utils/color'
+import { useGradientStore } from '../store/gradientStore'
 
 interface GLState {
   gl:               WebGLRenderingContext
@@ -103,13 +104,7 @@ export function useWebGL(
 
     gl.useProgram(program)
 
-    const paletteTexture = makePaletteTexture(gl, [
-      { id: '0', hex: '#FFE7F0', locked: false },
-      { id: '1', hex: '#EAB5E6', locked: false },
-      { id: '2', hex: '#E2D3E4', locked: false },
-      { id: '3', hex: '#E0A5DA', locked: false },
-      { id: '4', hex: '#F6A7D6', locked: false },
-    ])
+    const paletteTexture = makePaletteTexture(gl, useGradientStore.getState().colors)
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, paletteTexture)
     gl.uniform1i(locs['u_colorPalette'], 0)
@@ -135,13 +130,15 @@ export function useWebGL(
       canvas.width  = w
       canvas.height = h
       state.gl.viewport(0, 0, w, h)
+      state.gl.uniform2f(state.locs['u_resolution'], w, h)
     }
   }, [canvasRef])
 
   const updateUniforms = useCallback((
     params: ShaderParameters,
     colors: ColorEntry[],
-    _shader: ShaderType
+    _shader: ShaderType,
+    time = 0
   ) => {
     const state = stateRef.current
     if (!state) return
@@ -167,6 +164,7 @@ export function useWebGL(
     gl.uniform1f(locs['u_openness'], params.openness)
     gl.uniform1f(locs['u_seed'],     params.seed)
     gl.uniform1f(locs['u_grain'],    params.grain)
+    gl.uniform1f(locs['u_time'], time * 0.001)
     gl.uniform2f(
       locs['u_resolution'],
       canvasRef.current?.width  ?? 1,
@@ -174,12 +172,10 @@ export function useWebGL(
     )
   }, [canvasRef])
 
-  const drawFrame = useCallback((time: number) => {
+  const drawFrame = useCallback(() => {
     const state = stateRef.current
     if (!state) return
-    const { gl, locs } = state
-    gl.uniform1f(locs['u_time'], time * 0.001)
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+    state.gl.drawArrays(state.gl.TRIANGLE_STRIP, 0, 4)
   }, [])
 
   return { updateUniforms, resizeCanvas, drawFrame }
