@@ -32,7 +32,7 @@ export function ParameterPanel() {
   )
 
   return (
-    <div className="flex flex-col gap-4 px-3 pb-3">
+    <div className="flex flex-col gap-4">
       {PARAMS.map(({ key, label, min, max, step, format }) => (
         <Slider
           key={key}
@@ -43,7 +43,7 @@ export function ParameterPanel() {
           step={step}
           defaultValue={DEFAULT_PARAMETERS[key]}
           formatValue={format}
-          onChange={(v) => handleChange(key, v)}
+          onChange={v => handleChange(key, v)}
         />
       ))}
     </div>

@@ -2,43 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
-*, *::before, *::after { box-sizing: border-box; }
-
-body {
-  background: #080808;
-  color: #ffffff;
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
+/* ── Design tokens ─────────────────────────────────────────── */
+:root {
+  --bg:           #080A0D;
+  --bg-sidebar:   #0B0D10;
+  --bg-panel:     #111318;
+  --bg-elevated:  #161B24;
+  --border:       #1D222A;
+  --border-soft:  #161B20;
+  --text-primary: #F5F7FA;
+  --text-secondary: #8B93A1;
+  --text-muted:   #5F6875;
+  --accent:       #5B6EF5;
+  --accent-dim:   rgba(91,110,245,0.15);
+  --accent-glow:  rgba(91,110,245,0.08);
+  --track:        #1D222A;
+  --radius-sm:    4px;
+  --radius-md:    6px;
+  --radius-lg:    10px;
 }
 
-html, body, #root { height: 100%; overflow: hidden; }
+/* ── Reset ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI',
+               system-ui, 'Helvetica Neue', sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Range slider — premium filled track ───────────────────── */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   height: 2px;
-  background: #1f1f1f;
   border-radius: 1px;
   outline: none;
   cursor: pointer;
   width: 100%;
+  background: linear-gradient(
+    to right,
+    var(--accent) 0%,
+    var(--accent) var(--fill, 0%),
+    var(--track) var(--fill, 0%),
+    var(--track) 100%
+  );
+  transition: opacity 0.15s;
+}
+
+input[type="range"]:hover {
+  opacity: 0.9;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--text-primary);
   cursor: pointer;
+  box-shadow: 0 0 0 2px rgba(91,110,245,0);
+  transition: box-shadow 0.15s cubic-bezier(0.16,1,0.3,1),
+              transform  0.15s cubic-bezier(0.16,1,0.3,1);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 0 3px var(--accent-dim);
+  transform: scale(1.2);
 }
 
 input[type="range"]::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--text-primary);
   border: none;
   cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.16,1,0.3,1);
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover { background: #2a3040; }
+
+/* ── Utility ───────────────────────────────────────────────── */
+.section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }

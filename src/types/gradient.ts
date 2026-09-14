@@ -1,5 +1,9 @@
 // src/types/gradient.ts
 
+export type EffectType = 'none' | 'grain' | 'glow' | 'chromatic' | 'glass' | 'dither' | 'halftone'
+
+export type AspectRatioType = 'free' | '16:9' | '4:3' | '1:1' | '9:16'
+
 export type ShaderType =
   | 'flow'
   | 'beam'
@@ -38,6 +42,8 @@ export interface GradientState {
   isPlaying:    boolean
   history:      HistoryEntry[]
   historyIndex: number
+  effect:       EffectType
+  aspectRatio:  AspectRatioType
 }
 
 export interface GradientActions {
@@ -46,9 +52,12 @@ export interface GradientActions {
   addColor:     () => void
   removeColor:  (id: string) => void
   toggleLock:   (id: string) => void
+  lockAll:      () => void
   setShader:    (shader: ShaderType) => void
   setParameter: (key: keyof ShaderParameters, value: number) => void
   setPlaying:   (playing: boolean) => void
+  setEffect:    (effect: EffectType) => void
+  setAspectRatio: (ar: AspectRatioType) => void
   pushHistory:  () => void
   undo:         () => void
   redo:         () => void

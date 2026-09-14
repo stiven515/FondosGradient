@@ -3,6 +3,7 @@ import { create } from 'zustand'
 import type {
   ColorEntry, ShaderType, ShaderParameters,
   GradientState, GradientActions, HistoryEntry,
+  EffectType, AspectRatioType,
 } from '../types/gradient'
 import { generateId } from '../utils/color'
 
@@ -41,6 +42,8 @@ export const useGradientStore = create<Store>((set, get) => ({
   isPlaying:    true,
   history:      [],
   historyIndex: -1,
+  effect:       'grain' as EffectType,
+  aspectRatio:  'free' as AspectRatioType,
 
   setColors: (colors) => set({ colors }),
 
@@ -58,12 +61,24 @@ export const useGradientStore = create<Store>((set, get) => ({
   toggleLock: (id) =>
     set(s => ({ colors: s.colors.map(c => c.id === id ? { ...c, locked: !c.locked } : c) })),
 
+  lockAll: () =>
+    set(s => ({ colors: s.colors.map(c => ({ ...c, locked: true })) })),
+
   setShader: (shader: ShaderType) => set({ shader }),
 
   setParameter: (key: keyof ShaderParameters, value: number) =>
     set(s => ({ parameters: { ...s.parameters, [key]: value } })),
 
   setPlaying: (isPlaying) => set({ isPlaying }),
+
+  setEffect: (effect: EffectType) => {
+    set(s => {
+      const grain = effect === 'none' ? 0 : effect === 'grain' ? DEFAULT_PARAMETERS.grain : s.parameters.grain
+      return { effect, parameters: { ...s.parameters, grain } }
+    })
+  },
+
+  setAspectRatio: (aspectRatio: AspectRatioType) => set({ aspectRatio }),
 
   pushHistory: () => {
     const s = get()
