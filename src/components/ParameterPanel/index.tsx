@@ -24,34 +24,15 @@ const PARAMS: ParamDef[] = [
 ]
 
 export function ParameterPanel() {
-  const { parameters, setParameter, pushHistory } = useGradientStore()
+  const { parameters, setParameter } = useGradientStore()
 
   const handleChange = useCallback(
     (key: keyof ShaderParameters, value: number) => setParameter(key, value),
     [setParameter]
   )
 
-  const handleResetAll = useCallback(() => {
-    pushHistory()
-    Object.entries(DEFAULT_PARAMETERS).forEach(([k, v]) =>
-      setParameter(k as keyof ShaderParameters, v)
-    )
-  }, [pushHistory, setParameter])
-
   return (
-    <div className="flex flex-col gap-4 p-4 h-full overflow-y-auto">
-      <div className="flex items-center justify-between">
-        <h2 className="text-[11px] font-semibold text-gray-600 uppercase tracking-widest">
-          Parameters
-        </h2>
-        <button
-          onClick={handleResetAll}
-          className="text-xs text-gray-700 hover:text-gray-400 transition-colors"
-        >
-          Reset All
-        </button>
-      </div>
-
+    <div className="flex flex-col gap-4 px-3 pb-3">
       {PARAMS.map(({ key, label, min, max, step, format }) => (
         <Slider
           key={key}
