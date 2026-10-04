@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Undo2, Redo2, Share2, Download, Maximize2, ChevronDown } from 'lucide-react'
 import { useGradientStore } from '../../store/gradientStore'
+import { encodeStateToUrl } from '../../utils/urlState'
 import { SHADER_TYPES, STYLE_LABELS, STYLE_DESCRIPTIONS } from '../StyleSelector'
 import type { ShaderType } from '../../types/gradient'
 
@@ -25,6 +26,24 @@ export function TopBar() {
   function pickShader(type: ShaderType) {
     setShader(type)
     setOpen(false)
+  }
+
+  async function handleShare() {
+    const s = useGradientStore.getState()
+    const query = encodeStateToUrl({
+      shader:      s.shader,
+      colors:      s.colors,
+      parameters:  s.parameters,
+      effect:      s.effect,
+      aspectRatio: s.aspectRatio,
+    })
+    const url = `${window.location.origin}${window.location.pathname}?${query}`
+    window.history.replaceState(null, '', `?${query}`)
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      // clipboard unavailable (non-HTTPS dev) — URL bar still updated
+    }
   }
 
   function handleExport() {
@@ -156,7 +175,7 @@ export function TopBar() {
         <TopBarBtn onClick={undo} label="Undo (Ctrl+Z)"      icon={<Undo2     size={14} strokeWidth={1.75} />} />
         <TopBarBtn onClick={redo} label="Redo (Ctrl+Shift+Z)" icon={<Redo2     size={14} strokeWidth={1.75} />} />
         <div className="w-px h-4 mx-1.5" style={{ background: 'var(--border)' }} />
-        <TopBarBtn onClick={() => {}} label="Share"    icon={<Share2    size={14} strokeWidth={1.75} />} />
+        <TopBarBtn onClick={handleShare} label="Share"    icon={<Share2    size={14} strokeWidth={1.75} />} />
         <TopBarBtn onClick={handleExport} label="Export"   icon={<Download  size={14} strokeWidth={1.75} />} />
         <TopBarBtn onClick={handleFullscreen} label="Fullscreen" icon={<Maximize2 size={14} strokeWidth={1.75} />} />
       </div>
