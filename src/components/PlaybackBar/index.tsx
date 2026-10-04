@@ -1,5 +1,5 @@
 // src/components/PlaybackBar/index.tsx
-import { useState } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { Play, Pause, Repeat2, ChevronDown } from 'lucide-react'
 import { useGradientStore } from '../../store/gradientStore'
 import type { AspectRatioType } from '../../types/gradient'
@@ -10,17 +10,29 @@ const ASPECT_LABELS: Record<AspectRatioType, string> = {
 }
 
 export function PlaybackBar() {
-  const { isPlaying, setPlaying, aspectRatio, setAspectRatio } = useGradientStore()
-  const [looping, setLooping] = useState(true)
+  const { isPlaying, setPlaying, aspectRatio, setAspectRatio, isLooping, setLooping } = useGradientStore()
   const [arOpen, setArOpen] = useState(false)
+  const arRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!arOpen) return
+    function handler(e: MouseEvent) {
+      if (arRef.current && !arRef.current.contains(e.target as Node)) setArOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [arOpen])
 
   return (
     <div
-      className="flex items-center flex-shrink-0 px-4 gap-3"
+      className="flex items-center gap-3 px-4 rounded-xl"
       style={{
         height: 40,
-        background: 'var(--bg)',
-        borderTop: '1px solid var(--border-soft)',
+        background: 'rgba(10, 12, 18, 0.72)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.45)',
       }}
     >
       {/* Play / Pause */}
@@ -46,13 +58,13 @@ export function PlaybackBar() {
 
       {/* Loop toggle */}
       <button
-        onClick={() => setLooping(!looping)}
-        aria-label={looping ? 'Disable loop' : 'Enable loop'}
+        onClick={() => setLooping(!isLooping)}
+        aria-label={isLooping ? 'Disable loop' : 'Enable loop'}
         className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] transition-all select-none"
         style={{
-          color: looping ? 'var(--accent)' : 'var(--text-muted)',
-          background: looping ? 'var(--accent-glow)' : 'transparent',
-          border: `1px solid ${looping ? 'var(--accent-dim)' : 'transparent'}`,
+          color: isLooping ? 'var(--accent)' : 'var(--text-muted)',
+          background: isLooping ? 'var(--accent-glow)' : 'transparent',
+          border: `1px solid ${isLooping ? 'var(--accent-dim)' : 'transparent'}`,
           fontWeight: 500,
         }}
       >
@@ -72,7 +84,7 @@ export function PlaybackBar() {
       <div className="flex-1" />
 
       {/* Aspect ratio */}
-      <div className="relative">
+      <div ref={arRef} className="relative">
         <button
           onClick={() => setArOpen(!arOpen)}
           className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] transition-all"

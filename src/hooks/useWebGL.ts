@@ -79,7 +79,7 @@ export function useWebGL(
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const gl = canvas.getContext('webgl', { antialias: false, alpha: false })
+    const gl = canvas.getContext('webgl', { antialias: false, alpha: false, preserveDrawingBuffer: true })
     if (!gl) { console.error('WebGL not supported'); return }
 
     const { vertex, fragment } = shaders[shaderType]

@@ -40,6 +40,7 @@ export interface GradientState {
   shader:       ShaderType
   parameters:   ShaderParameters
   isPlaying:    boolean
+  isLooping:    boolean
   history:      HistoryEntry[]
   historyIndex: number
   effect:       EffectType
@@ -56,6 +57,7 @@ export interface GradientActions {
   setShader:    (shader: ShaderType) => void
   setParameter: (key: keyof ShaderParameters, value: number) => void
   setPlaying:   (playing: boolean) => void
+  setLooping:   (looping: boolean) => void
   setEffect:    (effect: EffectType) => void
   setAspectRatio: (ar: AspectRatioType) => void
   pushHistory:  () => void

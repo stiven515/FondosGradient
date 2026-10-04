@@ -10,20 +10,20 @@ interface EffectDef {
 }
 
 const EFFECTS: EffectDef[] = [
-  { id: 'none',       label: 'None',     icon: '○', ready: true  },
-  { id: 'grain',      label: 'Grain',    icon: '⋮', ready: true  },
-  { id: 'glow',       label: 'Glow',     icon: '◎', ready: false },
-  { id: 'chromatic',  label: 'Chroma',   icon: '◈', ready: false },
-  { id: 'glass',      label: 'Glass',    icon: '◻', ready: false },
-  { id: 'dither',     label: 'Dither',   icon: '▦', ready: false },
-  { id: 'halftone',   label: 'Halftone', icon: '⁘', ready: false },
+  { id: 'none',      label: 'None',     icon: '○', ready: true  },
+  { id: 'grain',     label: 'Grain',    icon: '⁘', ready: true  },
+  { id: 'glow',      label: 'Glow',     icon: '◎', ready: false },
+  { id: 'chromatic', label: 'Chroma',   icon: '◈', ready: false },
+  { id: 'glass',     label: 'Glass',    icon: '◻', ready: false },
+  { id: 'dither',    label: 'Dither',   icon: '▦', ready: false },
+  { id: 'halftone',  label: 'Halftone', icon: '⊹', ready: false },
 ]
 
 export function EffectsPanel() {
   const { effect, setEffect } = useGradientStore()
 
   return (
-    <div className="grid grid-cols-4 gap-1">
+    <div className="grid grid-cols-3 gap-1">
       {EFFECTS.map(e => {
         const active = effect === e.id
         return (
