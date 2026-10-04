@@ -9,7 +9,7 @@ describe('encodeStateToUrl', () => {
       shader: 'flow',
       colors: DEFAULT_COLORS,
       parameters: DEFAULT_PARAMETERS,
-      effect: 'none',
+      effect: 'none', effectAmount: 0.5, duration: 10,
       aspectRatio: 'free',
     })
     expect(result).toContain('shader=flow')
@@ -24,7 +24,7 @@ describe('encodeStateToUrl', () => {
       shader: 'mesh',
       colors: DEFAULT_COLORS,
       parameters: { ...DEFAULT_PARAMETERS, scale: 1.6 },
-      effect: 'none',
+      effect: 'none', effectAmount: 0.5, duration: 10,
       aspectRatio: '16:9',
     })
     expect(result).toContain('scale=1.60')
@@ -75,6 +75,22 @@ describe('decodeUrlToState', () => {
     expect(result.effect).toBe('grain')
     const params = result.parameters as Partial<ShaderParameters>
     expect(params.grain).toBeCloseTo(0.40)
+  })
+
+  it('round-trips effect amount and duration', () => {
+    const encoded = encodeStateToUrl({
+      shader: 'flow', colors: DEFAULT_COLORS, parameters: DEFAULT_PARAMETERS,
+      effect: 'glow', effectAmount: 0.75, duration: 20, aspectRatio: 'free',
+    })
+    const result = decodeUrlToState('?' + encoded)
+    expect(result.effectAmount).toBeCloseTo(0.75)
+    expect(result.duration).toBe(20)
+  })
+
+  it('rejects unsupported durations and out-of-range amounts', () => {
+    const result = decodeUrlToState('?dur=7&fx=3')
+    expect(result.duration).toBeUndefined()
+    expect(result.effectAmount).toBeUndefined()
   })
 
   it('ignores invalid color hex values', () => {

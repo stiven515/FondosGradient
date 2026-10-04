@@ -44,6 +44,8 @@ export interface GradientState {
   history:      HistoryEntry[]
   historyIndex: number
   effect:       EffectType
+  effectAmount: number
+  duration:     number
   aspectRatio:  AspectRatioType
 }
 
@@ -58,7 +60,10 @@ export interface GradientActions {
   setParameter: (key: keyof ShaderParameters, value: number) => void
   setPlaying:   (playing: boolean) => void
   setLooping:   (looping: boolean) => void
+  moveColor:    (from: number, to: number) => void
   setEffect:    (effect: EffectType) => void
+  setEffectAmount: (amount: number) => void
+  setDuration:  (seconds: number) => void
   setAspectRatio: (ar: AspectRatioType) => void
   pushHistory:  () => void
   undo:         () => void

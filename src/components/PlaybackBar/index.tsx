@@ -3,6 +3,8 @@ import { useRef, useEffect, useState } from 'react'
 import { Play, Pause, Repeat2, ChevronDown } from 'lucide-react'
 import { useGradientStore } from '../../store/gradientStore'
 import type { AspectRatioType } from '../../types/gradient'
+import { clock } from '../../utils/timeline'
+import { VALID_DURATIONS } from '../../utils/urlState'
 
 const ASPECT_OPTIONS: AspectRatioType[] = ['free', '16:9', '4:3', '1:1', '9:16']
 const ASPECT_LABELS: Record<AspectRatioType, string> = {
@@ -10,7 +12,10 @@ const ASPECT_LABELS: Record<AspectRatioType, string> = {
 }
 
 export function PlaybackBar() {
-  const { isPlaying, setPlaying, aspectRatio, setAspectRatio, isLooping, setLooping } = useGradientStore()
+  const {
+    isPlaying, setPlaying, aspectRatio, setAspectRatio,
+    isLooping, setLooping, duration, setDuration,
+  } = useGradientStore()
   const [arOpen, setArOpen] = useState(false)
   const arRef = useRef<HTMLDivElement>(null)
 
@@ -37,7 +42,10 @@ export function PlaybackBar() {
     >
       {/* Play / Pause */}
       <button
-        onClick={() => setPlaying(!isPlaying)}
+        onClick={() => {
+          if (!isPlaying && clock.elapsed >= duration * 1000) clock.seekTo = 0
+          setPlaying(!isPlaying)
+        }}
         aria-label={isPlaying ? 'Pause' : 'Play'}
         className="flex items-center justify-center rounded-md transition-all"
         style={{ width: 28, height: 28, color: 'var(--text-secondary)' }}
@@ -72,16 +80,23 @@ export function PlaybackBar() {
         <span>Loop</span>
       </button>
 
-      {/* Duration label */}
-      <span
-        className="text-[11px]"
-        style={{ color: 'var(--text-muted)', fontWeight: 500 }}
-      >
-        10s
-      </span>
+      <Scrubber duration={duration} />
 
-      {/* Spacer */}
-      <div className="flex-1" />
+      <button
+        onClick={() => {
+          const next = VALID_DURATIONS[(VALID_DURATIONS.indexOf(duration) + 1) % VALID_DURATIONS.length]
+          clock.seekTo = Math.min(clock.elapsed, next * 1000)
+          setDuration(next)
+        }}
+        aria-label={`Cycle duration, currently ${duration} seconds`}
+        title="Cycle duration"
+        className="px-2 py-1 rounded-md text-[11px] tabular-nums transition-colors"
+        style={{ color: 'var(--text-secondary)', fontWeight: 500, minWidth: 34 }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-panel)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+      >
+        {duration}s
+      </button>
 
       {/* Aspect ratio */}
       <div ref={arRef} className="relative">
@@ -131,6 +146,69 @@ export function PlaybackBar() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function Scrubber({ duration }: { duration: number }) {
+  const trackRef = useRef<HTMLDivElement>(null)
+  const fillRef  = useRef<HTMLDivElement>(null)
+  const timeRef  = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    let raf = 0
+    function tick() {
+      const pct = Math.min(1, clock.elapsed / (duration * 1000))
+      if (fillRef.current) fillRef.current.style.transform = `scaleX(${pct})`
+      if (timeRef.current) timeRef.current.textContent = (clock.elapsed / 1000).toFixed(1) + 's'
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [duration])
+
+  function seekFromPointer(clientX: number) {
+    const rect = trackRef.current!.getBoundingClientRect()
+    const pct = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
+    clock.seekTo = pct * duration * 1000
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        ref={trackRef}
+        role="slider"
+        tabIndex={0}
+        aria-label="Playback position"
+        aria-valuemin={0}
+        aria-valuemax={duration}
+        className="relative cursor-pointer py-2"
+        style={{ width: 160, touchAction: 'none' }}
+        onPointerDown={e => {
+          seekFromPointer(e.clientX)
+          e.currentTarget.setPointerCapture(e.pointerId)
+        }}
+        onPointerMove={e => {
+          if (e.currentTarget.hasPointerCapture(e.pointerId)) seekFromPointer(e.clientX)
+        }}
+        onKeyDown={e => {
+          const step = e.key === 'ArrowRight' ? 500 : e.key === 'ArrowLeft' ? -500 : 0
+          if (step) { e.preventDefault(); clock.seekTo = clock.elapsed + step }
+        }}
+      >
+        <div className="h-[3px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.10)' }}>
+          <div
+            ref={fillRef}
+            className="h-full origin-left"
+            style={{ background: 'var(--accent)', transform: 'scaleX(0)' }}
+          />
+        </div>
+      </div>
+      <span
+        ref={timeRef}
+        className="text-[11px] tabular-nums"
+        style={{ color: 'var(--text-muted)', fontWeight: 500, minWidth: 30, textAlign: 'right' }}
+      />
     </div>
   )
 }

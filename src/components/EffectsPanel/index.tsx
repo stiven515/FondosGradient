@@ -1,6 +1,8 @@
 // src/components/EffectsPanel/index.tsx
 import { useGradientStore } from '../../store/gradientStore'
 import type { EffectType } from '../../types/gradient'
+import { Slider } from '../ParameterPanel/Slider'
+import { POST_EFFECT_IDS } from '../../shaders/post'
 
 interface EffectDef {
   id:       EffectType
@@ -12,17 +14,19 @@ interface EffectDef {
 const EFFECTS: EffectDef[] = [
   { id: 'none',      label: 'None',     icon: '○', ready: true  },
   { id: 'grain',     label: 'Grain',    icon: '⁘', ready: true  },
-  { id: 'glow',      label: 'Glow',     icon: '◎', ready: false },
-  { id: 'chromatic', label: 'Chroma',   icon: '◈', ready: false },
-  { id: 'glass',     label: 'Glass',    icon: '◻', ready: false },
-  { id: 'dither',    label: 'Dither',   icon: '▦', ready: false },
-  { id: 'halftone',  label: 'Halftone', icon: '⊹', ready: false },
+  { id: 'glow',      label: 'Glow',     icon: '◎', ready: true  },
+  { id: 'chromatic', label: 'Chroma',   icon: '◈', ready: true  },
+  { id: 'glass',     label: 'Glass',    icon: '◻', ready: true  },
+  { id: 'dither',    label: 'Dither',   icon: '▦', ready: true  },
+  { id: 'halftone',  label: 'Halftone', icon: '⊹', ready: true  },
 ]
 
 export function EffectsPanel() {
-  const { effect, setEffect } = useGradientStore()
+  const { effect, setEffect, effectAmount, setEffectAmount } = useGradientStore()
+  const hasAmount = POST_EFFECT_IDS[effect] !== undefined
 
   return (
+    <div className="flex flex-col gap-3">
     <div className="grid grid-cols-3 gap-1">
       {EFFECTS.map(e => {
         const active = effect === e.id
@@ -61,6 +65,18 @@ export function EffectsPanel() {
           </button>
         )
       })}
+    </div>
+    {hasAmount && (
+      <Slider
+        label="Intensity"
+        value={effectAmount}
+        min={0}
+        max={1}
+        step={0.01}
+        defaultValue={0.5}
+        onChange={setEffectAmount}
+      />
+    )}
     </div>
   )
 }
