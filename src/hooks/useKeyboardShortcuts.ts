@@ -2,6 +2,7 @@
 import { useEffect } from 'react'
 import { useGradientStore } from '../store/gradientStore'
 import { generateHarmoniousPalette } from '../utils/palette'
+import { SHADER_TYPES } from '../components/StyleSelector'
 
 function isTypingTarget(e: KeyboardEvent): boolean {
   const t = e.target as HTMLElement
@@ -9,7 +10,7 @@ function isTypingTarget(e: KeyboardEvent): boolean {
 }
 
 export function useKeyboardShortcuts() {
-  const { undo, redo, setPlaying, isPlaying, colors, setColors, pushHistory } = useGradientStore()
+  const { undo, redo, setPlaying, isPlaying, colors, setColors, pushHistory, shader, setShader } = useGradientStore()
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -23,10 +24,17 @@ export function useKeyboardShortcuts() {
       }
       if (ctrl && e.key === 'z' && !e.shiftKey && !isTypingTarget(e)) { e.preventDefault(); undo(); return }
       if (ctrl && e.key === 'z' &&  e.shiftKey && !isTypingTarget(e)) { e.preventDefault(); redo(); return }
-      if (e.key.toLowerCase() === 'p' && !isTypingTarget(e))  { e.preventDefault(); setPlaying(!isPlaying) }
+      if (e.key.toLowerCase() === 'p' && !isTypingTarget(e)) { e.preventDefault(); setPlaying(!isPlaying); return }
+      // Tab cycles through shader types
+      if (e.key === 'Tab' && !isTypingTarget(e)) {
+        e.preventDefault()
+        const idx = SHADER_TYPES.indexOf(shader)
+        const next = SHADER_TYPES[(idx + 1) % SHADER_TYPES.length]
+        setShader(next)
+      }
     }
 
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [undo, redo, setPlaying, isPlaying, setColors, pushHistory])
+  }, [undo, redo, setPlaying, isPlaying, setColors, pushHistory, shader, setShader])
 }

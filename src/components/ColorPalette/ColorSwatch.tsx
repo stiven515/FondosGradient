@@ -42,7 +42,8 @@ export function ColorSwatch({ color, canRemove, onUpdate, onRemove, onToggleLock
           role="button"
           tabIndex={0}
           aria-label={`Open color picker for ${color.hex}`}
-          className="w-8 h-8 rounded-md border border-white/10 cursor-pointer transition-transform hover:scale-105"
+          className="w-7 h-7 rounded cursor-pointer transition-transform hover:scale-105"
+          style={{ boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.10)' }}
           style={{ backgroundColor: color.hex }}
           onClick={() => pickerRef.current?.click()}
           onKeyDown={(e) => e.key === 'Enter' && pickerRef.current?.click()}
@@ -63,9 +64,14 @@ export function ColorSwatch({ color, canRemove, onUpdate, onRemove, onToggleLock
         value={color.hex}
         onChange={handleHex}
         maxLength={7}
-        className="flex-1 text-xs bg-transparent text-gray-300 font-mono uppercase
-                   border border-transparent hover:border-gray-700 focus:border-gray-500
-                   rounded px-1 py-1 outline-none"
+        className="flex-1 text-xs font-mono uppercase rounded px-1.5 py-1 outline-none"
+        style={{
+          background: 'var(--bg-panel)',
+          color: 'var(--text-secondary)',
+          border: '1px solid var(--border)',
+        }}
+        onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent-dim)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+        onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
         aria-label="Hex color value"
       />
 

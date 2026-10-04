@@ -22,11 +22,14 @@ export default function App() {
         <Sidebar />
 
         {/* Canvas column */}
-        <div className="flex flex-col flex-1 min-w-0">
-          <div className="flex-1 min-h-0">
+        <div className="relative flex-1 min-w-0 min-h-0 p-3">
+          <div className="w-full h-full">
             <GradientCanvas />
           </div>
-          <PlaybackBar />
+          {/* Floating playback bar — lower third of canvas */}
+          <div className="absolute bottom-7 left-1/2 -translate-x-1/2 z-10">
+            <PlaybackBar />
+          </div>
         </div>
       </div>
 

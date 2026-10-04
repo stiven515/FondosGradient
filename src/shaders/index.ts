@@ -1,14 +1,19 @@
 // src/shaders/index.ts
 import type { ShaderType } from '../types/gradient'
-import { flowShader } from './flow'
+import { flowShader   } from './flow'
+import { beamShader   } from './beam'
+import { meshShader   } from './mesh'
+import { liquidShader } from './liquid'
+import { waveShader   } from './wave'
+import { silkShader   } from './silk'
+import { stripeShader } from './stripe'
 
-// Phases 2+ will replace placeholders with real shaders
 export const shaders: Record<ShaderType, { vertex: string; fragment: string }> = {
   flow:   flowShader,
-  beam:   flowShader,
-  mesh:   flowShader,
-  liquid: flowShader,
-  wave:   flowShader,
-  silk:   flowShader,
-  stripe: flowShader,
+  beam:   beamShader,
+  mesh:   meshShader,
+  liquid: liquidShader,
+  wave:   waveShader,
+  silk:   silkShader,
+  stripe: stripeShader,
 }

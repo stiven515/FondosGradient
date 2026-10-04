@@ -1,9 +1,6 @@
 // src/components/BottomArea/index.tsx
-import { useRef, useState } from 'react'
-import { Lock, Unlock, X } from 'lucide-react'
+import { useState } from 'react'
 import { useGradientStore } from '../../store/gradientStore'
-import { isValidHex } from '../../utils/color'
-import type { ColorEntry } from '../../types/gradient'
 
 /* ── Preset definitions ─────────────────────────────────── */
 interface Preset { name: string; colors: string[] }
@@ -20,11 +17,10 @@ const PRESETS: Preset[] = [
   { name: 'Gold',         colors: ['#F59E0B', '#FBBF24', '#FCD34D', '#FDE68A', '#FEF3C7'] },
 ]
 
-/* ── Helper: generateId (mirror from color utils) ───────── */
 import { generateId } from '../../utils/color'
 
 export function BottomArea() {
-  const { colors, updateColor, toggleLock, removeColor, setColors, pushHistory } = useGradientStore()
+  const { colors, setColors, pushHistory } = useGradientStore()
   const [activePreset, setActivePreset] = useState<string | null>(null)
 
   function applyPreset(preset: Preset) {
@@ -42,35 +38,12 @@ export function BottomArea() {
     <div
       className="flex flex-shrink-0"
       style={{
-        height: 96,
+        height: 88,
         borderTop: '1px solid var(--border-soft)',
         background: 'var(--bg)',
       }}
     >
-      {/* Left — PALETTE */}
-      <div
-        className="flex flex-col px-4 py-3 gap-2 flex-shrink-0"
-        style={{
-          width: 320,
-          borderRight: '1px solid var(--border-soft)',
-        }}
-      >
-        <span className="section-label">Palette</span>
-        <div className="flex items-center gap-2.5">
-          {colors.map(color => (
-            <SwatchCircle
-              key={color.id}
-              color={color}
-              canRemove={colors.length > 2}
-              onUpdate={hex => updateColor(color.id, hex)}
-              onToggleLock={() => toggleLock(color.id)}
-              onRemove={() => removeColor(color.id)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Right — PRESETS */}
+      {/* PRESETS — full width */}
       <div className="flex flex-col px-4 py-3 gap-2 flex-1 min-w-0">
         <span className="section-label">Presets</span>
         <div className="flex items-center gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
@@ -84,77 +57,6 @@ export function BottomArea() {
           ))}
         </div>
       </div>
-    </div>
-  )
-}
-
-/* ── Circular swatch ─────────────────────────────────────── */
-interface SwatchCircleProps {
-  color:        ColorEntry
-  canRemove:    boolean
-  onUpdate:     (hex: string) => void
-  onToggleLock: () => void
-  onRemove:     () => void
-}
-
-function SwatchCircle({ color, canRemove, onUpdate, onToggleLock, onRemove }: SwatchCircleProps) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [hovered, setHovered] = useState(false)
-
-  return (
-    <div
-      className="relative group flex-shrink-0"
-      style={{ width: 40, height: 40 }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <button
-        onClick={() => inputRef.current?.click()}
-        className="w-full h-full rounded-full transition-transform"
-        style={{
-          background: color.hex,
-          border: `2px solid rgba(255,255,255,${hovered ? 0.25 : 0.12})`,
-          transform: hovered ? 'scale(1.08)' : 'scale(1)',
-          transition: 'transform 0.15s cubic-bezier(0.16,1,0.3,1), border-color 0.15s',
-        }}
-        aria-label={`Color ${color.hex}`}
-        title={color.hex.toUpperCase()}
-      />
-      <input
-        ref={inputRef}
-        type="color"
-        value={color.hex}
-        onChange={e => isValidHex(e.target.value) && onUpdate(e.target.value)}
-        className="sr-only"
-        aria-label={`Pick color ${color.hex}`}
-      />
-
-      {/* Lock / remove overlay */}
-      {hovered && (
-        <div className="absolute -top-1 -right-1 flex flex-col gap-0.5">
-          <button
-            onClick={e => { e.stopPropagation(); onToggleLock() }}
-            className="w-4 h-4 flex items-center justify-center rounded-full"
-            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-            aria-label={color.locked ? 'Unlock' : 'Lock'}
-          >
-            {color.locked
-              ? <Lock size={7} style={{ color: 'var(--accent)' }} />
-              : <Unlock size={7} style={{ color: 'var(--text-muted)' }} />
-            }
-          </button>
-          {canRemove && !color.locked && (
-            <button
-              onClick={e => { e.stopPropagation(); onRemove() }}
-              className="w-4 h-4 flex items-center justify-center rounded-full"
-              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-              aria-label="Remove color"
-            >
-              <X size={7} style={{ color: 'var(--text-muted)' }} />
-            </button>
-          )}
-        </div>
-      )}
     </div>
   )
 }
