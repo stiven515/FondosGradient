@@ -43,8 +43,7 @@ export function ColorSwatch({ color, canRemove, onUpdate, onRemove, onToggleLock
           tabIndex={0}
           aria-label={`Open color picker for ${color.hex}`}
           className="w-7 h-7 rounded cursor-pointer transition-transform hover:scale-105"
-          style={{ boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.10)' }}
-          style={{ backgroundColor: color.hex }}
+          style={{ backgroundColor: color.hex, boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.10)' }}
           onClick={() => pickerRef.current?.click()}
           onKeyDown={(e) => e.key === 'Enter' && pickerRef.current?.click()}
         />

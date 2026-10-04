@@ -34,8 +34,10 @@ export function TopBar() {
       shader:      s.shader,
       colors:      s.colors,
       parameters:  s.parameters,
-      effect:      s.effect,
-      aspectRatio: s.aspectRatio,
+      effect:       s.effect,
+      effectAmount: s.effectAmount,
+      duration:     s.duration,
+      aspectRatio:  s.aspectRatio,
     })
     const url = `${window.location.origin}${window.location.pathname}?${query}`
     window.history.replaceState(null, '', `?${query}`)

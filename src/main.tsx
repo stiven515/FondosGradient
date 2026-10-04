@@ -17,7 +17,9 @@ if (urlState.parameters) {
   const keys = Object.keys(params) as (keyof typeof params)[]
   keys.forEach(k => useGradientStore.getState().setParameter(k, params[k]!))
 }
-if (urlState.aspectRatio) useGradientStore.getState().setAspectRatio(urlState.aspectRatio)
+if (urlState.effectAmount !== undefined) useGradientStore.getState().setEffectAmount(urlState.effectAmount)
+if (urlState.duration)    useGradientStore.getState().setDuration(urlState.duration)
+if (urlState.aspectRatio)useGradientStore.getState().setAspectRatio(urlState.aspectRatio)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

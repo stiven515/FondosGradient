@@ -25,6 +25,34 @@ describe('isLooping', () => {
   })
 })
 
+describe('moveColor', () => {
+  it('moves a color to a new index', () => {
+    const colors = ['#111111', '#222222', '#333333'].map((hex, i) => ({ id: String(i), hex, locked: false }))
+    useGradientStore.setState({ colors })
+    useGradientStore.getState().moveColor(0, 2)
+    expect(useGradientStore.getState().colors.map(c => c.id)).toEqual(['1', '2', '0'])
+  })
+
+  it('ignores out-of-range indices', () => {
+    const colors = ['#111111', '#222222'].map((hex, i) => ({ id: String(i), hex, locked: false }))
+    useGradientStore.setState({ colors })
+    useGradientStore.getState().moveColor(0, 5)
+    expect(useGradientStore.getState().colors.map(c => c.id)).toEqual(['0', '1'])
+  })
+})
+
+describe('effectAmount and duration', () => {
+  it('clamps effect amount to 0..1', () => {
+    useGradientStore.getState().setEffectAmount(1.7)
+    expect(useGradientStore.getState().effectAmount).toBe(1)
+  })
+
+  it('sets duration', () => {
+    useGradientStore.getState().setDuration(20)
+    expect(useGradientStore.getState().duration).toBe(20)
+  })
+})
+
 describe('persist partialize', () => {
   it('partialize excludes history, historyIndex, isPlaying, isLooping', () => {
     const state = useGradientStore.getState()

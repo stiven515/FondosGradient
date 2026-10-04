@@ -10,16 +10,22 @@ export interface PersistedState {
   shader:      ShaderType
   colors:      ColorEntry[]
   parameters:  ShaderParameters
-  effect:      EffectType
-  aspectRatio: AspectRatioType
+  effect:       EffectType
+  effectAmount: number
+  duration:     number
+  aspectRatio:  AspectRatioType
 }
 
+export const VALID_DURATIONS = [5, 10, 20, 30]
+
 interface DecodedState {
-  shader?:      ShaderType
-  colors?:      ColorEntry[]
-  parameters?:  Partial<ShaderParameters>
-  effect?:      EffectType
-  aspectRatio?: AspectRatioType
+  shader?:       ShaderType
+  colors?:       ColorEntry[]
+  parameters?:   Partial<ShaderParameters>
+  effect?:       EffectType
+  effectAmount?: number
+  duration?:     number
+  aspectRatio?:  AspectRatioType
 }
 
 export function encodeStateToUrl(state: PersistedState): string {
@@ -34,6 +40,8 @@ export function encodeStateToUrl(state: PersistedState): string {
     speed:    state.parameters.speed.toFixed(2),
     grain:    state.parameters.grain.toFixed(2),
     effect:   state.effect,
+    fx:       state.effectAmount.toFixed(2),
+    dur:      String(state.duration),
     ar:       state.aspectRatio,
   })
   return p.toString()
@@ -71,6 +79,12 @@ export function decodeUrlToState(search: string): DecodedState {
 
   const effect = p.get('effect') as EffectType | null
   if (effect && VALID_EFFECTS.includes(effect)) result.effect = effect
+
+  const fx = parseFloat(p.get('fx') ?? '')
+  if (fx >= 0 && fx <= 1) result.effectAmount = fx
+
+  const dur = Number(p.get('dur'))
+  if (VALID_DURATIONS.includes(dur)) result.duration = dur
 
   const ar = p.get('ar') as AspectRatioType | null
   if (ar && VALID_RATIOS.includes(ar)) result.aspectRatio = ar

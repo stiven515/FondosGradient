@@ -1,6 +1,6 @@
 // src/components/Sidebar/index.tsx
 import { useState, useCallback } from 'react'
-import { ChevronLeft, ChevronRight, Sparkles, Lock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Sparkles, Lock, GripVertical } from 'lucide-react'
 import { StyleSelector }  from '../StyleSelector'
 import { ParameterPanel } from '../ParameterPanel'
 import { EffectsPanel }   from '../EffectsPanel'
@@ -11,11 +11,22 @@ import type { ShaderParameters } from '../../types/gradient'
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
+  const [dragFrom, setDragFrom] = useState<number | null>(null)
+  const [dragOver, setDragOver] = useState<number | null>(null)
 
   const {
     colors, addColor, removeColor, lockAll, updateColor, toggleLock,
-    pushHistory, setColors, setParameter,
+    pushHistory, setColors, setParameter, moveColor,
   } = useGradientStore()
+
+  const handleDrop = useCallback((to: number) => {
+    if (dragFrom !== null && dragFrom !== to) {
+      pushHistory()
+      moveColor(dragFrom, to)
+    }
+    setDragFrom(null)
+    setDragOver(null)
+  }, [dragFrom, pushHistory, moveColor])
 
   const handleGenerate = useCallback(() => {
     pushHistory()
@@ -99,7 +110,7 @@ export function Sidebar() {
           <SectionHeader label="Palette">
             <div className="flex items-center gap-1">
               <button
-                onClick={() => removeColor(colors[colors.length - 1].id)}
+                onClick={() => { pushHistory(); removeColor(colors[colors.length - 1].id) }}
                 disabled={colors.length <= 2}
                 aria-label="Remove color"
                 className="flex items-center justify-center rounded transition-all text-sm"
@@ -124,7 +135,7 @@ export function Sidebar() {
                 {colors.length}
               </span>
               <button
-                onClick={() => addColor()}
+                onClick={() => { pushHistory(); addColor() }}
                 disabled={colors.length >= 8}
                 aria-label="Add color"
                 className="flex items-center justify-center rounded transition-all text-sm"
@@ -147,15 +158,44 @@ export function Sidebar() {
 
           {/* Individual color rows — swatch + hex input + lock/copy/remove */}
           <div className="flex flex-col gap-1">
-            {colors.map(color => (
-              <ColorSwatch
+            {colors.map((color, i) => (
+              <div
                 key={color.id}
-                color={color}
-                canRemove={colors.length > 2}
-                onUpdate={updateColor}
-                onRemove={removeColor}
-                onToggleLock={toggleLock}
-              />
+                className="flex items-center gap-1 rounded transition-opacity"
+                style={{
+                  opacity: dragFrom === i ? 0.4 : 1,
+                  boxShadow: dragOver === i && dragFrom !== i
+                    ? `0 ${dragFrom !== null && dragFrom < i ? 2 : -2}px 0 0 var(--accent)`
+                    : 'none',
+                }}
+                onDragOver={e => { e.preventDefault(); setDragOver(i) }}
+                onDrop={e => { e.preventDefault(); handleDrop(i) }}
+              >
+                <span
+                  draggable
+                  onDragStart={e => {
+                    e.dataTransfer.effectAllowed = 'move'
+                    e.dataTransfer.setData('text/plain', String(i))
+                    setDragFrom(i)
+                  }}
+                  onDragEnd={() => { setDragFrom(null); setDragOver(null) }}
+                  aria-label={`Drag to reorder ${color.hex}`}
+                  title="Drag to reorder"
+                  className="flex items-center cursor-grab active:cursor-grabbing"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  <GripVertical size={12} strokeWidth={1.5} />
+                </span>
+                <div className="flex-1 min-w-0" onFocusCapture={pushHistory}>
+                  <ColorSwatch
+                    color={color}
+                    canRemove={colors.length > 2}
+                    onUpdate={updateColor}
+                    onRemove={id => { pushHistory(); removeColor(id) }}
+                    onToggleLock={toggleLock}
+                  />
+                </div>
+              </div>
             ))}
           </div>
 

@@ -7,18 +7,11 @@ import { aspectRatioCss } from './aspectRatio'
 
 export function GradientCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const { shader, parameters, colors, isPlaying, aspectRatio } = useGradientStore()
+  const shader      = useGradientStore(s => s.shader)
+  const aspectRatio = useGradientStore(s => s.aspectRatio)
   const { updateUniforms, resizeCanvas, drawFrame } = useWebGL(canvasRef, shader)
 
-  useAnimation({
-    drawFrame,
-    updateUniforms,
-    resizeCanvas,
-    params:    parameters,
-    colors,
-    shader,
-    isPlaying,
-  })
+  useAnimation({ drawFrame, updateUniforms, resizeCanvas })
 
   const arCss = aspectRatioCss(aspectRatio)
 

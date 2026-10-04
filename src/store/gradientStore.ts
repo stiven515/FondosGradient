@@ -47,7 +47,22 @@ export const useGradientStore = create<Store>()(
       history:      [],
       historyIndex: -1,
       effect:       'none' as EffectType,
+      effectAmount: 0.5,
+      duration:     10,
       aspectRatio:  'free' as AspectRatioType,
+
+      moveColor: (from, to) =>
+        set(s => {
+          if (from === to || from < 0 || to < 0 || from >= s.colors.length || to >= s.colors.length) return s
+          const colors = [...s.colors]
+          const [moved] = colors.splice(from, 1)
+          colors.splice(to, 0, moved)
+          return { colors }
+        }),
+
+      setEffectAmount: (amount) => set({ effectAmount: Math.min(1, Math.max(0, amount)) }),
+
+      setDuration: (duration) => set({ duration }),
 
       setColors: (colors) => set({ colors }),
 
@@ -126,8 +141,10 @@ export const useGradientStore = create<Store>()(
         colors:      s.colors,
         shader:      s.shader,
         parameters:  s.parameters,
-        effect:      s.effect,
-        aspectRatio: s.aspectRatio,
+        effect:       s.effect,
+        effectAmount: s.effectAmount,
+        duration:     s.duration,
+        aspectRatio:  s.aspectRatio,
       }),
       migrate: (_state, _version) => ({
         colors:      [...DEFAULT_COLORS],
