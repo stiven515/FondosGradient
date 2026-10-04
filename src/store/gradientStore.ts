@@ -1,5 +1,6 @@
 // src/store/gradientStore.ts
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type {
   ColorEntry, ShaderType, ShaderParameters,
   GradientState, GradientActions, HistoryEntry,
@@ -35,82 +36,106 @@ function snapshot(state: GradientState): HistoryEntry {
 
 type Store = GradientState & GradientActions
 
-export const useGradientStore = create<Store>((set, get) => ({
-  colors:       [...DEFAULT_COLORS],
-  shader:       'flow',
-  parameters:   { ...DEFAULT_PARAMETERS },
-  isPlaying:    true,
-  history:      [],
-  historyIndex: -1,
-  effect:       'grain' as EffectType,
-  aspectRatio:  'free' as AspectRatioType,
+export const useGradientStore = create<Store>()(
+  persist(
+    (set, get) => ({
+      colors:       [...DEFAULT_COLORS],
+      shader:       'flow',
+      parameters:   { ...DEFAULT_PARAMETERS },
+      isPlaying:    true,
+      isLooping:    true,
+      history:      [],
+      historyIndex: -1,
+      effect:       'none' as EffectType,
+      aspectRatio:  'free' as AspectRatioType,
 
-  setColors: (colors) => set({ colors }),
+      setColors: (colors) => set({ colors }),
 
-  updateColor: (id, hex) =>
-    set(s => ({ colors: s.colors.map(c => c.id === id ? { ...c, hex } : c) })),
+      updateColor: (id, hex) =>
+        set(s => ({ colors: s.colors.map(c => c.id === id ? { ...c, hex } : c) })),
 
-  addColor: () =>
-    set(s => s.colors.length >= 8 ? s : {
-      colors: [...s.colors, { id: generateId(), hex: '#FFFFFF', locked: false }],
+      addColor: () =>
+        set(s => s.colors.length >= 8 ? s : {
+          colors: [...s.colors, { id: generateId(), hex: '#FFFFFF', locked: false }],
+        }),
+
+      removeColor: (id) =>
+        set(s => s.colors.length <= 2 ? s : { colors: s.colors.filter(c => c.id !== id) }),
+
+      toggleLock: (id) =>
+        set(s => ({ colors: s.colors.map(c => c.id === id ? { ...c, locked: !c.locked } : c) })),
+
+      lockAll: () =>
+        set(s => ({ colors: s.colors.map(c => ({ ...c, locked: true })) })),
+
+      setShader: (shader: ShaderType) => set({ shader }),
+
+      setParameter: (key: keyof ShaderParameters, value: number) =>
+        set(s => ({ parameters: { ...s.parameters, [key]: value } })),
+
+      setPlaying: (isPlaying) => set({ isPlaying }),
+
+      setLooping: (isLooping) => set({ isLooping }),
+
+      setEffect: (effect: EffectType) => {
+        set(s => {
+          const grain = effect === 'none' ? 0 : effect === 'grain' ? DEFAULT_PARAMETERS.grain : s.parameters.grain
+          return { effect, parameters: { ...s.parameters, grain } }
+        })
+      },
+
+      setAspectRatio: (aspectRatio: AspectRatioType) => set({ aspectRatio }),
+
+      pushHistory: () => {
+        const s = get()
+        const trimmed = s.history.slice(0, s.historyIndex + 1)
+        set({ history: [...trimmed, snapshot(s)], historyIndex: trimmed.length })
+      },
+
+      undo: () => {
+        const s = get()
+        const { history, historyIndex } = s
+        if (historyIndex < 0) return
+        const entry = history[historyIndex]
+        const newHistory = [...history.slice(0, historyIndex + 1), snapshot(s)]
+        set({
+          colors:       entry.colors,
+          shader:       entry.shader,
+          parameters:   { ...entry.parameters },
+          history:      newHistory,
+          historyIndex: historyIndex,
+        })
+      },
+
+      redo: () => {
+        const { history, historyIndex } = get()
+        if (historyIndex + 1 >= history.length) return
+        const entry = history[historyIndex + 1]
+        set({
+          colors:       entry.colors,
+          shader:       entry.shader,
+          parameters:   { ...entry.parameters },
+          historyIndex: historyIndex + 1,
+        })
+      },
     }),
-
-  removeColor: (id) =>
-    set(s => s.colors.length <= 2 ? s : { colors: s.colors.filter(c => c.id !== id) }),
-
-  toggleLock: (id) =>
-    set(s => ({ colors: s.colors.map(c => c.id === id ? { ...c, locked: !c.locked } : c) })),
-
-  lockAll: () =>
-    set(s => ({ colors: s.colors.map(c => ({ ...c, locked: true })) })),
-
-  setShader: (shader: ShaderType) => set({ shader }),
-
-  setParameter: (key: keyof ShaderParameters, value: number) =>
-    set(s => ({ parameters: { ...s.parameters, [key]: value } })),
-
-  setPlaying: (isPlaying) => set({ isPlaying }),
-
-  setEffect: (effect: EffectType) => {
-    set(s => {
-      const grain = effect === 'none' ? 0 : effect === 'grain' ? DEFAULT_PARAMETERS.grain : s.parameters.grain
-      return { effect, parameters: { ...s.parameters, grain } }
-    })
-  },
-
-  setAspectRatio: (aspectRatio: AspectRatioType) => set({ aspectRatio }),
-
-  pushHistory: () => {
-    const s = get()
-    const trimmed = s.history.slice(0, s.historyIndex + 1)
-    set({ history: [...trimmed, snapshot(s)], historyIndex: trimmed.length })
-  },
-
-  undo: () => {
-    const s = get()
-    const { history, historyIndex } = s
-    if (historyIndex < 0) return
-    const entry = history[historyIndex]
-    // Save current live state at historyIndex+1 for redo, then restore checkpoint
-    const newHistory = [...history.slice(0, historyIndex + 1), snapshot(s)]
-    set({
-      colors:       entry.colors,
-      shader:       entry.shader,
-      parameters:   { ...entry.parameters },
-      history:      newHistory,
-      historyIndex: historyIndex,
-    })
-  },
-
-  redo: () => {
-    const { history, historyIndex } = get()
-    if (historyIndex + 1 >= history.length) return
-    const entry = history[historyIndex + 1]
-    set({
-      colors:       entry.colors,
-      shader:       entry.shader,
-      parameters:   { ...entry.parameters },
-      historyIndex: historyIndex + 1,
-    })
-  },
-}))
+    {
+      name: 'gradient-studio-v1',
+      version: 1,
+      partialize: (s) => ({
+        colors:      s.colors,
+        shader:      s.shader,
+        parameters:  s.parameters,
+        effect:      s.effect,
+        aspectRatio: s.aspectRatio,
+      }),
+      migrate: (_state, _version) => ({
+        colors:      [...DEFAULT_COLORS],
+        shader:      'flow' as ShaderType,
+        parameters:  { ...DEFAULT_PARAMETERS },
+        effect:      'none' as EffectType,
+        aspectRatio: 'free' as AspectRatioType,
+      }),
+    }
+  )
+)
