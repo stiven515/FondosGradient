@@ -1,5 +1,4 @@
 import type { ShaderType, AspectRatioType, EffectType, ColorEntry, ShaderParameters } from '../types/gradient'
-import { DEFAULT_PARAMETERS } from '../store/gradientStore'
 import { generateId } from './color'
 
 const VALID_SHADERS: ShaderType[] = ['flow', 'beam', 'mesh', 'liquid', 'wave', 'silk', 'stripe']
@@ -7,12 +6,20 @@ const VALID_EFFECTS: EffectType[] = ['none', 'grain', 'glow', 'chromatic', 'glas
 const VALID_RATIOS: AspectRatioType[] = ['free', '16:9', '4:3', '1:1', '9:16']
 const HEX_RE = /^[0-9A-Fa-f]{6}$/
 
-interface PersistedState {
+export interface PersistedState {
   shader:      ShaderType
   colors:      ColorEntry[]
   parameters:  ShaderParameters
   effect:      EffectType
   aspectRatio: AspectRatioType
+}
+
+interface DecodedState {
+  shader?:      ShaderType
+  colors?:      ColorEntry[]
+  parameters?:  Partial<ShaderParameters>
+  effect?:      EffectType
+  aspectRatio?: AspectRatioType
 }
 
 export function encodeStateToUrl(state: PersistedState): string {
@@ -32,10 +39,10 @@ export function encodeStateToUrl(state: PersistedState): string {
   return p.toString()
 }
 
-export function decodeUrlToState(search: string): Partial<PersistedState> {
+export function decodeUrlToState(search: string): DecodedState {
   if (!search) return {}
   const p = new URLSearchParams(search)
-  const result: Partial<PersistedState> = {}
+  const result: DecodedState = {}
 
   const shader = p.get('shader') as ShaderType | null
   if (shader && VALID_SHADERS.includes(shader)) result.shader = shader
@@ -58,7 +65,9 @@ export function decodeUrlToState(search: string): Partial<PersistedState> {
       if (!isNaN(v)) { params[key] = v; hasAnyParam = true }
     }
   }
-  if (hasAnyParam) result.parameters = { ...DEFAULT_PARAMETERS, ...params }
+  // Only return the keys that were actually in the URL — don't merge with defaults
+  // so a partial URL like ?speed=2 doesn't reset the user's other saved values
+  if (hasAnyParam) result.parameters = params
 
   const effect = p.get('effect') as EffectType | null
   if (effect && VALID_EFFECTS.includes(effect)) result.effect = effect

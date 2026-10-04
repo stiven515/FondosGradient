@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { encodeStateToUrl, decodeUrlToState } from './urlState'
 import { DEFAULT_COLORS, DEFAULT_PARAMETERS } from '../store/gradientStore'
+import type { ShaderParameters } from '../types/gradient'
 
 describe('encodeStateToUrl', () => {
   it('encodes shader and colors', () => {
@@ -57,6 +58,23 @@ describe('decodeUrlToState', () => {
     expect(result.shader).toBe('wave')
     expect(result.parameters).toBeUndefined()
     expect(result.colors).toBeUndefined()
+  })
+
+  it('partial numeric params contain only decoded keys, not defaults', () => {
+    const result = decodeUrlToState('?speed=2.00')
+    // Only speed should be present — scale and other keys must NOT appear
+    expect(result.parameters).toBeDefined()
+    const params = result.parameters as Partial<ShaderParameters>
+    expect(params.speed).toBe(2.0)
+    expect(params.scale).toBeUndefined()
+    expect(params.curl).toBeUndefined()
+  })
+
+  it('grain survives a share URL when effect=grain is present', () => {
+    const result = decodeUrlToState('?effect=grain&grain=0.40&speed=1.00&scale=1.60&curl=1.20&drift=0.55&openness=0.00&seed=0')
+    expect(result.effect).toBe('grain')
+    const params = result.parameters as Partial<ShaderParameters>
+    expect(params.grain).toBeCloseTo(0.40)
   })
 
   it('ignores invalid color hex values', () => {
