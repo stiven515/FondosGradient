@@ -7,6 +7,7 @@ import { liquidShader } from './liquid'
 import { waveShader   } from './wave'
 import { silkShader   } from './silk'
 import { stripeShader } from './stripe'
+import { ribbonShader } from './ribbon'
 
 export const shaders: Record<ShaderType, { vertex: string; fragment: string }> = {
   flow:   flowShader,
@@ -16,4 +17,5 @@ export const shaders: Record<ShaderType, { vertex: string; fragment: string }> =
   wave:   waveShader,
   silk:   silkShader,
   stripe: stripeShader,
+  ribbon: ribbonShader,
 }

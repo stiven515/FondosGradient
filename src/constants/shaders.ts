@@ -1,7 +1,7 @@
 import type { ShaderType } from '../types/gradient'
 
 export const SHADER_TYPES: ShaderType[] = [
-  'flow', 'beam', 'mesh', 'liquid', 'wave', 'silk', 'stripe',
+  'flow', 'beam', 'mesh', 'liquid', 'wave', 'silk', 'stripe', 'ribbon',
 ]
 
 export const STYLE_LABELS: Record<ShaderType, string> = {
@@ -12,6 +12,7 @@ export const STYLE_LABELS: Record<ShaderType, string> = {
   wave:   'Wave',
   silk:   'Silk',
   stripe: 'Stripe',
+  ribbon: 'Ribbon',
 }
 
 export const STYLE_DESCRIPTIONS: Record<ShaderType, string> = {
@@ -22,4 +23,5 @@ export const STYLE_DESCRIPTIONS: Record<ShaderType, string> = {
   wave:   'Sine-wave interference moiré patterns',
   silk:   'Smooth horizontal bands that ripple',
   stripe: 'Organic stripes with curl-noise edges',
+  ribbon: 'Sweeping glass ribbons with reflections',
 }

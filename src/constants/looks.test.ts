@@ -7,11 +7,12 @@ import { useGradientStore } from '../store/gradientStore'
 describe('LOOKS', () => {
   it('ships a varied set of looks with unique names', () => {
     expect(LOOKS.length).toBeGreaterThanOrEqual(8)
-    expect(new Set(LOOKS.map(l => l.name)).size).toBe(LOOKS.length)
+    expect(new Set(LOOKS.map(l => l.id)).size).toBe(LOOKS.length)
+    expect(new Set(LOOKS.map(l => l.nameKey)).size).toBe(LOOKS.length)
     expect(new Set(LOOKS.map(l => l.shader)).size).toBeGreaterThanOrEqual(5)
   })
 
-  it.each(LOOKS.map(l => [l.name, l] as const))('%s is a valid design', (_name, look) => {
+  it.each(LOOKS.map(l => [l.id, l] as const))('%s is a valid design', (_id, look) => {
     expect(SHADER_TYPES).toContain(look.shader)
     expect(VALID_EFFECTS).toContain(look.effect)
     expect(look.colors.length).toBeGreaterThanOrEqual(2)

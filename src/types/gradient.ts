@@ -12,6 +12,7 @@ export type ShaderType =
   | 'wave'
   | 'silk'
   | 'stripe'
+  | 'ribbon'
 
 export interface ShaderParameters {
   scale:    number  // 0.5 – 4.0
