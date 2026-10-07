@@ -7,16 +7,10 @@ import type {
   EffectType, AspectRatioType,
 } from '../types/gradient'
 import { generateId } from '../utils/color'
+import { DEFAULT_PARAMETERS } from '../constants/parameters'
+import { sanitizePersisted } from './persist'
 
-export const DEFAULT_PARAMETERS: ShaderParameters = {
-  scale:    1.6,
-  curl:     1.2,
-  drift:    0.55,
-  openness: 0.0,
-  seed:     0,
-  speed:    1.0,
-  grain:    0.18,
-}
+export { DEFAULT_PARAMETERS }
 
 export const DEFAULT_COLORS: ColorEntry[] = [
   { id: generateId(), hex: '#F9C5D1', locked: false }, // soft rose
@@ -46,7 +40,7 @@ export const useGradientStore = create<Store>()(
       isLooping:    true,
       history:      [],
       historyIndex: -1,
-      effect:       'none' as EffectType,
+      effect:       'grain' as EffectType,
       effectAmount: 0.5,
       duration:     10,
       aspectRatio:  'free' as AspectRatioType,
@@ -146,13 +140,8 @@ export const useGradientStore = create<Store>()(
         duration:     s.duration,
         aspectRatio:  s.aspectRatio,
       }),
-      migrate: (_state, _version) => ({
-        colors:      [...DEFAULT_COLORS],
-        shader:      'flow' as ShaderType,
-        parameters:  { ...DEFAULT_PARAMETERS },
-        effect:      'none' as EffectType,
-        aspectRatio: 'free' as AspectRatioType,
-      }),
+      migrate: (persisted) => sanitizePersisted(persisted) as Store,
+      merge: (persisted, current) => ({ ...current, ...sanitizePersisted(persisted) }),
     }
   )
 )

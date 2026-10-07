@@ -2,25 +2,23 @@
 import { useCallback } from 'react'
 import { useGradientStore, DEFAULT_PARAMETERS } from '../../store/gradientStore'
 import { Slider } from './Slider'
+import { PARAM_RANGES } from '../../constants/parameters'
 import type { ShaderParameters } from '../../types/gradient'
 
 interface ParamDef {
   key:    keyof ShaderParameters
   label:  string
-  min:    number
-  max:    number
-  step:   number
   format?: (v: number) => string
 }
 
 const PARAMS: ParamDef[] = [
-  { key: 'scale',    label: 'Scale',    min: 0.5, max: 4.0, step: 0.05 },
-  { key: 'curl',     label: 'Curl',     min: 0.0, max: 3.0, step: 0.05 },
-  { key: 'drift',    label: 'Drift',    min: 0.0, max: 1.0, step: 0.01, format: v => `${Math.round(v * 100)}%` },
-  { key: 'openness', label: 'Openness', min: 0.0, max: 1.0, step: 0.01, format: v => `${Math.round(v * 100)}%` },
-  { key: 'seed',     label: 'Seed',     min: 0,   max: 100, step: 1,    format: v => v.toFixed(0) },
-  { key: 'speed',    label: 'Speed',    min: 0.0, max: 3.0, step: 0.05 },
-  { key: 'grain',    label: 'Grain',    min: 0.0, max: 0.5, step: 0.01, format: v => `${Math.round(v * 100)}%` },
+  { key: 'scale', label: 'Scale' },
+  { key: 'curl', label: 'Curl' },
+  { key: 'drift', label: 'Drift', format: v => `${Math.round(v * 100)}%` },
+  { key: 'openness', label: 'Openness', format: v => `${Math.round(v * 100)}%` },
+  { key: 'seed', label: 'Seed', format: v => v.toFixed(0) },
+  { key: 'speed', label: 'Speed' },
+  { key: 'grain', label: 'Grain', format: v => `${Math.round(v * 100)}%` },
 ]
 
 export function ParameterPanel() {
@@ -33,7 +31,9 @@ export function ParameterPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      {PARAMS.map(({ key, label, min, max, step, format }) => (
+      {PARAMS.map(({ key, label, format }) => {
+        const { min, max, step } = PARAM_RANGES[key]
+        return (
         <Slider
           key={key}
           label={label}
@@ -45,7 +45,8 @@ export function ParameterPanel() {
           formatValue={format}
           onChange={v => handleChange(key, v)}
         />
-      ))}
+        )
+      })}
     </div>
   )
 }

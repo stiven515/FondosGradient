@@ -2,7 +2,7 @@
 import { useEffect } from 'react'
 import { useGradientStore } from '../store/gradientStore'
 import { generateHarmoniousPalette } from '../utils/palette'
-import { SHADER_TYPES } from '../components/StyleSelector'
+import { SHADER_TYPES } from '../constants/shaders'
 
 function isTypingTarget(e: KeyboardEvent): boolean {
   const t = e.target as HTMLElement

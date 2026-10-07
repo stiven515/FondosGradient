@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Undo2, Redo2, Share2, Download, Maximize2, ChevronDown } from 'lucide-react'
 import { useGradientStore } from '../../store/gradientStore'
 import { encodeStateToUrl } from '../../utils/urlState'
-import { SHADER_TYPES, STYLE_LABELS, STYLE_DESCRIPTIONS } from '../StyleSelector'
+import { SHADER_TYPES, STYLE_LABELS, STYLE_DESCRIPTIONS } from '../../constants/shaders'
 import type { ShaderType } from '../../types/gradient'
 
 export function TopBar() {
