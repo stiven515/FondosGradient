@@ -3,7 +3,8 @@ import { useState, useRef, useEffect } from 'react'
 import { Undo2, Redo2, Share2, Download, Maximize2, ChevronDown } from 'lucide-react'
 import { useGradientStore } from '../../store/gradientStore'
 import { encodeStateToUrl } from '../../utils/urlState'
-import { SHADER_TYPES, STYLE_LABELS, STYLE_DESCRIPTIONS } from '../StyleSelector'
+import { downloadCanvasPng, getCanvas } from '../../utils/exportPng'
+import { SHADER_TYPES, STYLE_LABELS, STYLE_DESCRIPTIONS } from '../../constants/shaders'
 import type { ShaderType } from '../../types/gradient'
 
 export function TopBar() {
@@ -49,17 +50,8 @@ export function TopBar() {
   }
 
   function handleExport() {
-    const canvas = document.querySelector('canvas') as HTMLCanvasElement | null
-    if (!canvas) return
-    canvas.toBlob(blob => {
-      if (!blob) return
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `gradient-studio-${Date.now()}.png`
-      a.click()
-      URL.revokeObjectURL(url)
-    })
+    const canvas = getCanvas()
+    if (canvas) downloadCanvasPng(canvas)
   }
 
   return (

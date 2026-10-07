@@ -1,5 +1,5 @@
 // src/hooks/useWebGL.ts
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useState } from 'react'
 import type { RefObject } from 'react'
 import type { ShaderParameters, ShaderType, ColorEntry, EffectType } from '../types/gradient'
 import { shaders } from '../shaders'
@@ -76,18 +76,27 @@ const UNIFORM_NAMES = [
   'u_openness', 'u_seed', 'u_grain', 'u_resolution',
 ] as const
 
+export type WebGLStatus = 'ok' | 'unsupported' | 'error'
+
 export function useWebGL(
   canvasRef: RefObject<HTMLCanvasElement>,
   shaderType: ShaderType
 ) {
   const stateRef = useRef<GLState | null>(null)
+  const [status, setStatus] = useState<WebGLStatus>('ok')
+  const [epoch, setEpoch]   = useState(0)
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
     const gl = canvas.getContext('webgl', { antialias: false, alpha: false, preserveDrawingBuffer: true })
-    if (!gl) { console.error('WebGL not supported'); return }
+    if (!gl) { setStatus('unsupported'); return }
+
+    const onLost = (e: Event) => { e.preventDefault(); stateRef.current = null }
+    const onRestored = () => setEpoch(n => n + 1)
+    canvas.addEventListener('webglcontextlost', onLost)
+    canvas.addEventListener('webglcontextrestored', onRestored)
 
     const { vertex, fragment } = shaders[shaderType]
     let program: WebGLProgram
@@ -97,8 +106,11 @@ export function useWebGL(
       post    = buildProgram(gl, VERTEX_SHADER, POST_FRAGMENT)
     } catch (err) {
       console.error(err)
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reports the result of initialising an external system (WebGL)
+      setStatus('error')
       return
     }
+    setStatus('ok')
 
     // Fullscreen quad — two triangles as TRIANGLE_STRIP
     const buf = gl.createBuffer()!
@@ -138,6 +150,8 @@ export function useWebGL(
     stateRef.current = { gl, program, locs, paletteTexture, post, postLocs, sceneTexture, framebuffer }
 
     return () => {
+      canvas.removeEventListener('webglcontextlost', onLost)
+      canvas.removeEventListener('webglcontextrestored', onRestored)
       stateRef.current = null
       gl.deleteProgram(program)
       gl.deleteProgram(post)
@@ -146,7 +160,7 @@ export function useWebGL(
       gl.deleteTexture(paletteTexture)
       gl.deleteBuffer(buf)
     }
-  }, [canvasRef, shaderType])
+  }, [canvasRef, shaderType, epoch])
 
   const resizeCanvas = useCallback((): boolean => {
     const canvas = canvasRef.current
@@ -231,5 +245,5 @@ export function useWebGL(
     gl.activeTexture(gl.TEXTURE0)
   }, [])
 
-  return { updateUniforms, resizeCanvas, drawFrame }
+  return { updateUniforms, resizeCanvas, drawFrame, status }
 }

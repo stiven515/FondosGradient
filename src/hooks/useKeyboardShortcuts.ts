@@ -2,7 +2,7 @@
 import { useEffect } from 'react'
 import { useGradientStore } from '../store/gradientStore'
 import { generateHarmoniousPalette } from '../utils/palette'
-import { SHADER_TYPES } from '../components/StyleSelector'
+import { SHADER_TYPES } from '../constants/shaders'
 
 function isTypingTarget(e: KeyboardEvent): boolean {
   const t = e.target as HTMLElement
@@ -10,7 +10,7 @@ function isTypingTarget(e: KeyboardEvent): boolean {
 }
 
 export function useKeyboardShortcuts() {
-  const { undo, redo, setPlaying, isPlaying, colors, setColors, pushHistory, shader, setShader } = useGradientStore()
+  const { undo, redo, setPlaying, isPlaying, setColors, pushHistory, shader, setShader } = useGradientStore()
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

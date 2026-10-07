@@ -93,6 +93,24 @@ describe('decodeUrlToState', () => {
     expect(result.effectAmount).toBeUndefined()
   })
 
+  it('clamps numeric params to their valid range', () => {
+    const params = decodeUrlToState('?scale=99&speed=-5&grain=3&seed=500').parameters as Partial<ShaderParameters>
+    expect(params.scale).toBe(4)
+    expect(params.speed).toBe(0)
+    expect(params.grain).toBe(0.5)
+    expect(params.seed).toBe(100)
+  })
+
+  it('ignores non-finite numeric params', () => {
+    const result = decodeUrlToState('?scale=Infinity&curl=abc')
+    expect(result.parameters).toBeUndefined()
+  })
+
+  it('caps shared palettes at eight colors', () => {
+    const hexes = Array.from({ length: 12 }, () => 'AABBCC').join(',')
+    expect(decodeUrlToState('?colors=' + hexes).colors).toHaveLength(8)
+  })
+
   it('ignores invalid color hex values', () => {
     const result = decodeUrlToState('?colors=ZZZ,FF0000')
     // Invalid hex filtered, only valid one kept — but < 2 valid so returns undefined

@@ -4,7 +4,7 @@ import { Play, Pause, Repeat2, ChevronDown } from 'lucide-react'
 import { useGradientStore } from '../../store/gradientStore'
 import type { AspectRatioType } from '../../types/gradient'
 import { clock } from '../../utils/timeline'
-import { VALID_DURATIONS } from '../../utils/urlState'
+import { VALID_DURATIONS } from '../../constants/parameters'
 
 const ASPECT_OPTIONS: AspectRatioType[] = ['free', '16:9', '4:3', '1:1', '9:16']
 const ASPECT_LABELS: Record<AspectRatioType, string> = {
