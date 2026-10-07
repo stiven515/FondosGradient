@@ -4,6 +4,8 @@ import { TopBar }                  from './components/TopBar'
 import { Sidebar }                 from './components/Sidebar'
 import { PlaybackBar }             from './components/PlaybackBar'
 import { BottomArea }              from './components/BottomArea'
+import { Toaster }                 from './components/Toaster'
+import { HelpDialog }              from './components/HelpDialog'
 import { useKeyboardShortcuts }    from './hooks/useKeyboardShortcuts'
 
 export default function App() {
@@ -18,7 +20,7 @@ export default function App() {
       <TopBar />
 
       {/* Middle: sidebar + canvas + playback */}
-      <div className="flex flex-1 min-h-0">
+      <div className="relative flex flex-1 min-h-0">
         <Sidebar />
 
         {/* Canvas column */}
@@ -27,7 +29,7 @@ export default function App() {
             <GradientCanvas />
           </div>
           {/* Floating playback bar — lower third of canvas */}
-          <div className="absolute bottom-7 left-1/2 -translate-x-1/2 z-10">
+          <div className="absolute bottom-7 inset-x-3 z-10 flex justify-center pointer-events-none">
             <PlaybackBar />
           </div>
         </div>
@@ -35,6 +37,9 @@ export default function App() {
 
       {/* Bottom: palette circles + presets */}
       <BottomArea />
+
+      <Toaster />
+      <HelpDialog />
     </div>
   )
 }

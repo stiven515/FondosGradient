@@ -1,9 +1,10 @@
 // src/components/TopBar/index.tsx
 import { useState, useRef, useEffect } from 'react'
-import { Undo2, Redo2, Share2, Download, Maximize2, ChevronDown } from 'lucide-react'
+import { Undo2, Redo2, Share2, Maximize2, ChevronDown, CircleHelp } from 'lucide-react'
 import { useGradientStore } from '../../store/gradientStore'
 import { encodeStateToUrl } from '../../utils/urlState'
-import { downloadCanvasPng, getCanvas } from '../../utils/exportPng'
+import { toast, useUiStore } from '../../store/uiStore'
+import { ExportMenu } from './ExportMenu'
 import { SHADER_TYPES, STYLE_LABELS, STYLE_DESCRIPTIONS } from '../../constants/shaders'
 import type { ShaderType } from '../../types/gradient'
 
@@ -44,14 +45,10 @@ export function TopBar() {
     window.history.replaceState(null, '', `?${query}`)
     try {
       await navigator.clipboard.writeText(url)
+      toast('Link copied to clipboard')
     } catch {
-      // clipboard unavailable (non-HTTPS dev) — URL bar still updated
+      toast('Could not copy — the link is in the address bar', 'error')
     }
-  }
-
-  function handleExport() {
-    const canvas = getCanvas()
-    if (canvas) downloadCanvasPng(canvas)
   }
 
   return (
@@ -70,7 +67,7 @@ export function TopBar() {
           style={{ background: gradient }}
         />
         <span
-          className="text-[13px] font-semibold tracking-tight"
+          className="hidden sm:inline text-[13px] font-semibold tracking-tight"
           style={{ color: 'var(--text-primary)' }}
         >
           Gradient Studio
@@ -170,8 +167,9 @@ export function TopBar() {
         <TopBarBtn onClick={redo} label="Redo (Ctrl+Shift+Z)" icon={<Redo2     size={14} strokeWidth={1.75} />} />
         <div className="w-px h-4 mx-1.5" style={{ background: 'var(--border)' }} />
         <TopBarBtn onClick={handleShare} label="Share"    icon={<Share2    size={14} strokeWidth={1.75} />} />
-        <TopBarBtn onClick={handleExport} label="Export"   icon={<Download  size={14} strokeWidth={1.75} />} />
+        <ExportMenu />
         <TopBarBtn onClick={handleFullscreen} label="Fullscreen" icon={<Maximize2 size={14} strokeWidth={1.75} />} />
+        <TopBarBtn onClick={() => useUiStore.getState().toggleHelp(true)} label="Keyboard shortcuts (?)" icon={<CircleHelp size={14} strokeWidth={1.75} />} />
       </div>
     </div>
   )
