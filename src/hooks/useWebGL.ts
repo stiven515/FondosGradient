@@ -4,7 +4,10 @@ import type { RefObject } from 'react'
 import type { ShaderParameters, ShaderType, ColorEntry, EffectType } from '../types/gradient'
 import { shaders } from '../shaders'
 import { VERTEX_SHADER } from '../shaders/shared'
-import { POST_FRAGMENT, POST_EFFECT_IDS } from '../shaders/post'
+import { POST_FRAGMENT, POST_UNIFORMS } from '../shaders/post'
+import { STYLE_UNIFORMS } from '../shaders/uniforms'
+import { effectParams } from '../shaders/effectParams'
+import { postEffectId } from '../constants/effects'
 import { hexToRgbNorm } from '../utils/color'
 import { useGradientStore } from '../store/gradientStore'
 import { renderOverride } from '../utils/exportPng'
@@ -71,12 +74,6 @@ function makePaletteTexture(gl: WebGLRenderingContext, colors: ColorEntry[]): We
   return tex
 }
 
-const UNIFORM_NAMES = [
-  'u_colorPalette', 'u_numColors', 'u_time',
-  'u_speed', 'u_scale', 'u_curl', 'u_drift',
-  'u_openness', 'u_seed', 'u_grain', 'u_resolution',
-] as const
-
 export type WebGLStatus = 'ok' | 'unsupported' | 'error'
 
 export function useWebGL(
@@ -121,7 +118,7 @@ export function useWebGL(
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
 
     const locs: Record<string, WebGLUniformLocation | null> = {}
-    UNIFORM_NAMES.forEach(n => { locs[n] = gl.getUniformLocation(program, n) })
+    STYLE_UNIFORMS.forEach(n => { locs[n] = gl.getUniformLocation(program, n) })
 
     gl.useProgram(program)
 
@@ -131,7 +128,7 @@ export function useWebGL(
     gl.uniform1i(locs['u_colorPalette'], 0)
 
     const postLocs: Record<string, WebGLUniformLocation | null> = {}
-    ;['u_scene', 'u_resolution', 'u_effect', 'u_amount'].forEach(n => {
+    POST_UNIFORMS.forEach(n => {
       postLocs[n] = gl.getUniformLocation(post, n)
     })
 
@@ -231,7 +228,7 @@ export function useWebGL(
     const state = stateRef.current
     if (!state) return
     const { gl, post, postLocs, sceneTexture, framebuffer } = state
-    const effectId = POST_EFFECT_IDS[effect]
+    const effectId = postEffectId(effect)
     if (effectId === undefined) {
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
       return
@@ -246,7 +243,7 @@ export function useWebGL(
     gl.uniform1i(postLocs['u_scene'], 1)
     gl.uniform2f(postLocs['u_resolution'], gl.drawingBufferWidth, gl.drawingBufferHeight)
     gl.uniform1f(postLocs['u_effect'], effectId)
-    gl.uniform1f(postLocs['u_amount'], amount)
+    gl.uniform4fv(postLocs['u_params'], effectParams(effect, amount))
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     gl.activeTexture(gl.TEXTURE0)
   }, [])

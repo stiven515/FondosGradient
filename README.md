@@ -34,17 +34,34 @@ npm install
 npm run dev        # servidor de desarrollo en http://localhost:5173
 npm run build      # typecheck + build de producción
 npm run lint       # ESLint
-npm run test:run   # tests (Vitest)
+npm run test:run   # tests unitarios (Vitest)
+npm run test:e2e   # tests en navegador real con WebGL (Playwright)
 ```
+
+## Pruebas
+
+Los efectos y shaders se protegen en tres capas, porque cada una atrapa errores que las otras no ven:
+
+1. **Unitarios (Vitest):** el registro de efectos, las curvas de intensidad y la lógica de la app.
+2. **Validación estática del GLSL:** todos los shaders se parsean en cada corrida y fallan ante errores de sintaxis, variables o funciones inexistentes, bucles no constantes y uniforms que no coinciden con lo que sube la app.
+3. **End-to-end (Playwright):** abre la app en un Chrome real, compila cada estilo y cada efecto en la GPU, comprueba que el efecto cambie la imagen y crezca con la intensidad, que el grain mantenga su tamaño en resoluciones grandes y que las exportaciones (PNG, JPG, video y CSS) funcionen.
+
+Para correr los e2e en local sin descargar nada, usa el Chrome instalado:
+
+```bash
+PW_CHANNEL=chrome npm run test:e2e
+```
+
+En CI se instala Chromium y corren solos en cada push y pull request.
 
 ## Estructura
 
 ```
 src/
   components/   UI: TopBar, Sidebar, GradientCanvas, PlaybackBar, EffectsPanel, Toaster, HelpDialog...
-  constants/    rangos de parámetros, estilos y límites compartidos
+  constants/    rangos de parámetros, estilos, registro de efectos y límites compartidos
   hooks/        useWebGL (contexto y render), useAnimation (loop), atajos
-  shaders/      un shader por estilo, shared.ts (helpers GLSL) y post.ts (efectos)
+  shaders/      un shader por estilo, shared.ts (helpers GLSL), post.ts (efectos) y effectParams.ts (curvas de intensidad)
   store/        estado global (Zustand) y validación de lo guardado
   utils/        URL compartible, timeline, export de imagen y video, CSS, diseños guardados, color y paletas
 ```
