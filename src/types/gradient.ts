@@ -29,6 +29,16 @@ export interface ColorEntry {
   locked: boolean
 }
 
+export interface Design {
+  shader:        ShaderType
+  colors:        string[]
+  parameters:    ShaderParameters
+  effect:        EffectType
+  effectAmount:  number
+  duration?:     number
+  aspectRatio?:  AspectRatioType
+}
+
 export interface HistoryEntry {
   colors:     ColorEntry[]
   shader:     ShaderType
@@ -61,6 +71,7 @@ export interface GradientActions {
   setPlaying:   (playing: boolean) => void
   setLooping:   (looping: boolean) => void
   moveColor:    (from: number, to: number) => void
+  applyDesign:  (design: Design) => void
   setEffect:    (effect: EffectType) => void
   setEffectAmount: (amount: number) => void
   setDuration:  (seconds: number) => void

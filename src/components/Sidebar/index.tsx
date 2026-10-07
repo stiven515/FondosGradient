@@ -1,6 +1,6 @@
 // src/components/Sidebar/index.tsx
-import { useState, useCallback } from 'react'
-import { ChevronLeft, ChevronRight, Sparkles, Lock, GripVertical } from 'lucide-react'
+import { useState, useCallback, useRef } from 'react'
+import { ChevronLeft, ChevronRight, Sparkles, Lock, GripVertical, ImagePlus } from 'lucide-react'
 import { StyleSelector }  from '../StyleSelector'
 import { ParameterPanel } from '../ParameterPanel'
 import { EffectsPanel }   from '../EffectsPanel'
@@ -8,11 +8,15 @@ import { ColorSwatch }    from '../ColorPalette/ColorSwatch'
 import { useGradientStore, DEFAULT_PARAMETERS } from '../../store/gradientStore'
 import { generateHarmoniousPalette } from '../../utils/palette'
 import { matches, useMediaQuery } from '../../utils/media'
+import { paletteFromFile } from '../../utils/paletteFromFile'
+import { generateId } from '../../utils/color'
+import { toast } from '../../store/uiStore'
 import type { ShaderParameters } from '../../types/gradient'
 
 export function Sidebar() {
   const narrow = useMediaQuery('(max-width: 767px)')
   const [collapsed, setCollapsed] = useState(() => matches('(max-width: 767px)'))
+  const fileRef = useRef<HTMLInputElement>(null)
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
 
@@ -33,6 +37,25 @@ export function Sidebar() {
   const handleGenerate = useCallback(() => {
     pushHistory()
     setColors(generateHarmoniousPalette(useGradientStore.getState().colors))
+  }, [pushHistory, setColors])
+
+  const handleImage = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    try {
+      const hexes = await paletteFromFile(file, 5)
+      if (hexes.length < 2) {
+        toast('Not enough color variety in that image', 'error')
+        return
+      }
+      const current = useGradientStore.getState().colors
+      pushHistory()
+      setColors(hexes.map((hex, i) => ({ id: current[i]?.id ?? generateId(), hex, locked: false })))
+      toast('Palette extracted from image')
+    } catch {
+      toast('Could not read that image', 'error')
+    }
   }, [pushHistory, setColors])
 
   const handleResetAll = useCallback(() => {
@@ -227,6 +250,29 @@ export function Sidebar() {
               <Sparkles size={11} strokeWidth={2} />
               Generate
             </button>
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md transition-all text-[12px] font-medium"
+              style={{
+                background: 'var(--bg-panel)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-secondary)',
+              }}
+              aria-label="Extract palette from image"
+              title="Extract palette from an image"
+            >
+              <ImagePlus size={11} strokeWidth={2} />
+              Image
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImage}
+              aria-label="Palette image"
+              className="sr-only"
+              tabIndex={-1}
+            />
             <button
               onClick={lockAll}
               className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md transition-all text-[12px] font-medium"

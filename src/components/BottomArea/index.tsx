@@ -1,8 +1,14 @@
 // src/components/BottomArea/index.tsx
 import { useState } from 'react'
+import { X } from 'lucide-react'
 import { useGradientStore } from '../../store/gradientStore'
+import { toast } from '../../store/uiStore'
+import { LOOKS } from '../../constants/looks'
+import { generateId } from '../../utils/color'
+import { loadSaved, saveDesign, removeDesign, type SavedDesign } from '../../utils/savedDesigns'
+import type { Design } from '../../types/gradient'
 
-/* ── Preset definitions ─────────────────────────────────── */
+/* ── Palette presets (colors only) ───────────────────────── */
 interface Preset { name: string; colors: string[] }
 
 const PRESETS: Preset[] = [
@@ -17,11 +23,19 @@ const PRESETS: Preset[] = [
   { name: 'Gold',         colors: ['#F59E0B', '#FBBF24', '#FCD34D', '#FDE68A', '#FEF3C7'] },
 ]
 
-import { generateId } from '../../utils/color'
+type Tab = 'palettes' | 'looks' | 'saved'
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'palettes', label: 'Palettes' },
+  { id: 'looks',    label: 'Looks' },
+  { id: 'saved',    label: 'Saved' },
+]
 
 export function BottomArea() {
-  const { colors, setColors, pushHistory } = useGradientStore()
+  const { colors, setColors, pushHistory, applyDesign } = useGradientStore()
+  const [tab, setTab] = useState<Tab>('palettes')
   const [activePreset, setActivePreset] = useState<string | null>(null)
+  const [saved, setSaved] = useState<SavedDesign[]>(() => loadSaved())
+  const [name, setName] = useState('')
 
   function applyPreset(preset: Preset) {
     pushHistory()
@@ -34,26 +48,128 @@ export function BottomArea() {
     setActivePreset(preset.name)
   }
 
+  function currentDesign(): Design {
+    const s = useGradientStore.getState()
+    return {
+      shader: s.shader,
+      colors: s.colors.map(c => c.hex),
+      parameters: { ...s.parameters },
+      effect: s.effect,
+      effectAmount: s.effectAmount,
+      duration: s.duration,
+      aspectRatio: s.aspectRatio,
+    }
+  }
+
+  function save() {
+    saveDesign(name, currentDesign())
+    setSaved(loadSaved())
+    setName('')
+    toast('Design saved')
+  }
+
+  function remove(id: string) {
+    removeDesign(id)
+    setSaved(loadSaved())
+  }
+
+  function onTabKey(e: React.KeyboardEvent) {
+    const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
+    if (!step) return
+    e.preventDefault()
+    const next = TABS[(TABS.findIndex(t => t.id === tab) + step + TABS.length) % TABS.length]
+    setTab(next.id)
+    document.getElementById(`tab-${next.id}`)?.focus()
+  }
+
   return (
     <div
       className="flex flex-shrink-0"
-      style={{
-        borderTop: '1px solid var(--border-soft)',
-        background: 'var(--bg)',
-      }}
+      style={{ borderTop: '1px solid var(--border-soft)', background: 'var(--bg)' }}
     >
-      {/* PRESETS — full width */}
       <div className="flex flex-col px-4 py-3 gap-2 flex-1 min-w-0">
-        <span className="section-label">Presets</span>
-        <div className="flex items-center gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
-          {PRESETS.map(preset => (
+        <div className="flex items-center gap-4">
+          <div role="tablist" aria-label="Presets" className="flex items-center gap-3" onKeyDown={onTabKey}>
+            {TABS.map(t => (
+              <button
+                key={t.id}
+                id={`tab-${t.id}`}
+                role="tab"
+                aria-selected={tab === t.id}
+                aria-controls="bottom-panel"
+                tabIndex={tab === t.id ? 0 : -1}
+                onClick={() => setTab(t.id)}
+                className="section-label transition-colors"
+                style={{ color: tab === t.id ? 'var(--text-primary)' : undefined }}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {tab === 'saved' && (
+            <form
+              className="flex items-center gap-1.5 ml-auto"
+              onSubmit={e => { e.preventDefault(); save() }}
+            >
+              <input
+                id="design-name"
+                aria-label="Design name"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Name this design"
+                maxLength={32}
+                className="text-[11px] rounded px-2 py-1 outline-none"
+                style={{ width: 150, background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+              />
+              <button
+                type="submit"
+                className="text-[11px] font-medium rounded px-2.5 py-1"
+                style={{ background: 'var(--accent)', color: '#fff' }}
+              >
+                Save
+              </button>
+            </form>
+          )}
+        </div>
+
+        <div
+          id="bottom-panel"
+          role="tabpanel"
+          aria-labelledby={`tab-${tab}`}
+          className="flex items-center gap-2 overflow-x-auto pb-0.5"
+          style={{ scrollbarWidth: 'none' }}
+        >
+          {tab === 'palettes' && PRESETS.map(preset => (
             <PresetCard
               key={preset.name}
-              preset={preset}
+              name={preset.name}
+              colors={preset.colors}
               active={activePreset === preset.name}
               onClick={() => applyPreset(preset)}
             />
           ))}
+
+          {tab === 'looks' && LOOKS.map(look => (
+            <PresetCard
+              key={look.name}
+              name={look.name}
+              colors={look.colors}
+              onClick={() => applyDesign(look)}
+            />
+          ))}
+
+          {tab === 'saved' && (saved.length === 0
+            ? <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>No saved designs yet. Name the current one and press Save.</span>
+            : saved.map(s => (
+              <PresetCard
+                key={s.id}
+                name={s.name}
+                colors={s.design.colors}
+                onClick={() => applyDesign(s.design)}
+                onRemove={() => remove(s.id)}
+              />
+            )))}
         </div>
       </div>
     </div>
@@ -61,40 +177,54 @@ export function BottomArea() {
 }
 
 /* ── Preset card ─────────────────────────────────────────── */
-function PresetCard({ preset, active, onClick }: { preset: Preset; active: boolean; onClick: () => void }) {
-  const gradient = `linear-gradient(135deg, ${preset.colors.join(', ')})`
+function PresetCard({ name, colors, active = false, onClick, onRemove }: {
+  name: string
+  colors: string[]
+  active?: boolean
+  onClick: () => void
+  onRemove?: () => void
+}) {
+  const gradient = `linear-gradient(135deg, ${colors.join(', ')})`
 
   return (
-    <button
-      onClick={onClick}
-      className="flex flex-col items-center gap-1.5 flex-shrink-0 rounded-md transition-all"
-      style={{
-        padding: '4px 4px 3px',
-        border: `1px solid ${active ? 'var(--accent)' : 'var(--border-soft)'}`,
-        background: active ? 'var(--accent-dim)' : 'var(--bg-panel)',
-      }}
-      onMouseEnter={e => {
-        if (!active) e.currentTarget.style.borderColor = 'var(--border)'
-      }}
-      onMouseLeave={e => {
-        if (!active) e.currentTarget.style.borderColor = 'var(--border-soft)'
-      }}
-      title={preset.name}
-    >
-      <div
-        className="w-14 h-7 rounded-sm flex-shrink-0"
-        style={{ background: gradient }}
-      />
-      <span
-        className="text-[9px] leading-none"
+    <div className="relative flex-shrink-0 group">
+      <button
+        onClick={onClick}
+        aria-label={name}
+        className="flex flex-col items-center gap-1.5 rounded-md transition-all"
         style={{
-          color: active ? 'var(--accent)' : 'var(--text-muted)',
-          fontWeight: active ? 600 : 400,
-          whiteSpace: 'nowrap',
+          padding: '4px 4px 3px',
+          border: `1px solid ${active ? 'var(--accent)' : 'var(--border-soft)'}`,
+          background: active ? 'var(--accent-dim)' : 'var(--bg-panel)',
         }}
+        onMouseEnter={e => { if (!active) e.currentTarget.style.borderColor = 'var(--border)' }}
+        onMouseLeave={e => { if (!active) e.currentTarget.style.borderColor = 'var(--border-soft)' }}
+        title={name}
       >
-        {preset.name}
-      </span>
-    </button>
+        <div className="w-14 h-7 rounded-sm flex-shrink-0" style={{ background: gradient }} />
+        <span
+          className="text-[9px] leading-none truncate"
+          style={{
+            maxWidth: 56,
+            color: active ? 'var(--accent)' : 'var(--text-muted)',
+            fontWeight: active ? 600 : 400,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {name}
+        </span>
+      </button>
+      {onRemove && (
+        <button
+          onClick={onRemove}
+          aria-label={`Delete ${name}`}
+          title="Delete"
+          className="absolute -top-1 -right-1 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+          style={{ width: 16, height: 16, background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+        >
+          <X size={9} strokeWidth={2.5} />
+        </button>
+      )}
+    </div>
   )
 }
