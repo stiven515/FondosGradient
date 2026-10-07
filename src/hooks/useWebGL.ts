@@ -7,6 +7,7 @@ import { VERTEX_SHADER } from '../shaders/shared'
 import { POST_FRAGMENT, POST_EFFECT_IDS } from '../shaders/post'
 import { hexToRgbNorm } from '../utils/color'
 import { useGradientStore } from '../store/gradientStore'
+import { renderOverride } from '../utils/exportPng'
 
 interface GLState {
   gl:               WebGLRenderingContext
@@ -166,11 +167,16 @@ export function useWebGL(
     const canvas = canvasRef.current
     const state  = stateRef.current
     if (!canvas || !state) return false
-    const dpr = Math.min(window.devicePixelRatio, 2)
-    const w   = Math.max(1, Math.floor(canvas.clientWidth  * dpr))
-    const h   = Math.max(1, Math.floor(canvas.clientHeight * dpr))
-    if (canvas.width === w && canvas.height === h) return false
     const { gl, sceneTexture } = state
+    const dpr = Math.min(window.devicePixelRatio, 2)
+    const limit = Math.min(
+      gl.getParameter(gl.MAX_TEXTURE_SIZE) as number,
+      ...(gl.getParameter(gl.MAX_VIEWPORT_DIMS) as Int32Array),
+    )
+    const want = renderOverride.size ?? { w: canvas.clientWidth * dpr, h: canvas.clientHeight * dpr }
+    const w = Math.min(limit, Math.max(1, Math.floor(want.w)))
+    const h = Math.min(limit, Math.max(1, Math.floor(want.h)))
+    if (canvas.width === w && canvas.height === h) return false
     canvas.width  = w
     canvas.height = h
     gl.viewport(0, 0, w, h)

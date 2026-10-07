@@ -101,7 +101,7 @@ export function Sidebar() {
 
         {/* STYLE */}
         <Section>
-          <SectionHeader label="Style" hint="Tab to cycle" />
+          <SectionHeader label="Style" hint="S to cycle" />
           <StyleSelector />
         </Section>
 

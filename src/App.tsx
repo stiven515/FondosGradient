@@ -4,6 +4,8 @@ import { TopBar }                  from './components/TopBar'
 import { Sidebar }                 from './components/Sidebar'
 import { PlaybackBar }             from './components/PlaybackBar'
 import { BottomArea }              from './components/BottomArea'
+import { Toaster }                 from './components/Toaster'
+import { HelpDialog }              from './components/HelpDialog'
 import { useKeyboardShortcuts }    from './hooks/useKeyboardShortcuts'
 
 export default function App() {
@@ -35,6 +37,9 @@ export default function App() {
 
       {/* Bottom: palette circles + presets */}
       <BottomArea />
+
+      <Toaster />
+      <HelpDialog />
     </div>
   )
 }

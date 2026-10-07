@@ -1,40 +1,60 @@
 // src/hooks/useKeyboardShortcuts.ts
 import { useEffect } from 'react'
 import { useGradientStore } from '../store/gradientStore'
+import { useUiStore } from '../store/uiStore'
 import { generateHarmoniousPalette } from '../utils/palette'
 import { SHADER_TYPES } from '../constants/shaders'
 
-function isTypingTarget(e: KeyboardEvent): boolean {
-  const t = e.target as HTMLElement
-  return t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable
+function isTyping(t: HTMLElement | null): boolean {
+  return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)
+}
+
+// Space natively activates focused controls; stealing it would break keyboard use.
+function isInteractive(t: HTMLElement | null): boolean {
+  return !!t && (t.tagName === 'BUTTON' || t.tagName === 'A' || ['button', 'slider', 'option', 'menuitem'].includes(t.getAttribute('role') ?? ''))
 }
 
 export function useKeyboardShortcuts() {
-  const { undo, redo, setPlaying, isPlaying, setColors, pushHistory, shader, setShader } = useGradientStore()
-
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      const ctrl = e.ctrlKey || e.metaKey
+      const ui = useUiStore.getState()
+      if (e.key === 'Escape' && ui.helpOpen) { ui.toggleHelp(false); return }
 
-      if (e.code === 'Space' && !isTypingTarget(e)) {
-        e.preventDefault()
-        pushHistory()
-        setColors(generateHarmoniousPalette(useGradientStore.getState().colors))
+      const target = e.target instanceof HTMLElement ? e.target : null
+      if (isTyping(target)) return
+
+      const s = useGradientStore.getState()
+      const ctrl = e.ctrlKey || e.metaKey
+      const key = e.key.toLowerCase()
+
+      if (ctrl && !e.altKey) {
+        if (key === 'z') { e.preventDefault(); if (e.shiftKey) s.redo(); else s.undo() }
+        else if (key === 'y') { e.preventDefault(); s.redo() }
         return
       }
-      if (ctrl && e.key === 'z' && !e.shiftKey && !isTypingTarget(e)) { e.preventDefault(); undo(); return }
-      if (ctrl && e.key === 'z' &&  e.shiftKey && !isTypingTarget(e)) { e.preventDefault(); redo(); return }
-      if (e.key.toLowerCase() === 'p' && !isTypingTarget(e)) { e.preventDefault(); setPlaying(!isPlaying); return }
-      // Tab cycles through shader types
-      if (e.key === 'Tab' && !isTypingTarget(e)) {
+      if (e.altKey) return
+
+      if (e.code === 'Space') {
+        if (isInteractive(target)) return
         e.preventDefault()
-        const idx = SHADER_TYPES.indexOf(shader)
-        const next = SHADER_TYPES[(idx + 1) % SHADER_TYPES.length]
-        setShader(next)
+        s.setPlaying(!s.isPlaying)
+        return
+      }
+      if (e.key === '?') { e.preventDefault(); ui.toggleHelp(); return }
+      if (key === 'p') { e.preventDefault(); s.setPlaying(!s.isPlaying); return }
+      if (key === 'g') {
+        e.preventDefault()
+        s.pushHistory()
+        s.setColors(generateHarmoniousPalette(s.colors))
+        return
+      }
+      if (key === 's') {
+        e.preventDefault()
+        s.setShader(SHADER_TYPES[(SHADER_TYPES.indexOf(s.shader) + 1) % SHADER_TYPES.length])
       }
     }
 
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [undo, redo, setPlaying, isPlaying, setColors, pushHistory, shader, setShader])
+  }, [])
 }
