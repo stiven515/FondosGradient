@@ -1,45 +1,18 @@
 // src/App.tsx
-import { GradientCanvas }          from './components/GradientCanvas'
-import { TopBar }                  from './components/TopBar'
-import { Sidebar }                 from './components/Sidebar'
-import { PlaybackBar }             from './components/PlaybackBar'
-import { BottomArea }              from './components/BottomArea'
-import { Toaster }                 from './components/Toaster'
-import { HelpDialog }              from './components/HelpDialog'
-import { useKeyboardShortcuts }    from './hooks/useKeyboardShortcuts'
+import { Studio } from './components/Studio'
+import { Landing } from './components/Landing'
+import { Toaster } from './components/Toaster'
+import { HelpDialog } from './components/HelpDialog'
+import { useView } from './store/viewStore'
 
 export default function App() {
-  useKeyboardShortcuts()
+  const view = useView(s => s.view)
 
   return (
-    <div
-      className="flex flex-col overflow-hidden"
-      style={{ height: '100dvh', background: 'var(--bg)', color: 'var(--text-primary)' }}
-    >
-      {/* Top navigation bar */}
-      <TopBar />
-
-      {/* Middle: sidebar + canvas + playback */}
-      <div className="relative flex flex-1 min-h-0">
-        <Sidebar />
-
-        {/* Canvas column */}
-        <div className="relative flex-1 min-w-0 min-h-0 p-3">
-          <div className="w-full h-full">
-            <GradientCanvas />
-          </div>
-          {/* Floating playback bar — lower third of canvas */}
-          <div className="absolute bottom-7 inset-x-3 z-10 flex justify-center pointer-events-none">
-            <PlaybackBar />
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom: palette circles + presets */}
-      <BottomArea />
-
+    <>
+      {view === 'studio' ? <Studio /> : <Landing />}
       <Toaster />
       <HelpDialog />
-    </div>
+    </>
   )
 }
