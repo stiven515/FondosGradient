@@ -2,6 +2,12 @@
   "name": "gradient-studio",
   "private": true,
   "version": "0.0.0",
+  "description": "Real-time animated gradient background editor built with WebGL",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stiven515/FondosGradient.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
