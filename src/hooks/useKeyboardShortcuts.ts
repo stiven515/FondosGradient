@@ -10,7 +10,7 @@ function isTypingTarget(e: KeyboardEvent): boolean {
 }
 
 export function useKeyboardShortcuts() {
-  const { undo, redo, setPlaying, isPlaying, colors, setColors, pushHistory, shader, setShader } = useGradientStore()
+  const { undo, redo, setPlaying, isPlaying, setColors, pushHistory, shader, setShader } = useGradientStore()
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
