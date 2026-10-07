@@ -59,6 +59,19 @@ export const useGradientStore = create<Store>()(
 
       setDuration: (duration) => set({ duration }),
 
+      applyDesign: (design) => {
+        get().pushHistory()
+        set(s => ({
+          colors: design.colors.map((hex, i) => ({ id: s.colors[i]?.id ?? generateId(), hex, locked: false })),
+          shader: design.shader,
+          parameters: { ...design.parameters },
+          effect: design.effect,
+          effectAmount: design.effectAmount,
+          ...(design.duration !== undefined && { duration: design.duration }),
+          ...(design.aspectRatio !== undefined && { aspectRatio: design.aspectRatio }),
+        }))
+      },
+
       setColors: (colors) => set({ colors }),
 
       updateColor: (id, hex) =>
