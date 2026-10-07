@@ -1,4 +1,5 @@
 import type { ShaderParameters } from '../types/gradient'
+import { EFFECT_IDS } from './effects'
 
 export const PARAM_RANGES: Record<keyof ShaderParameters, { min: number; max: number; step: number }> = {
   scale:    { min: 0.5, max: 4.0, step: 0.05 },
@@ -13,7 +14,7 @@ export const PARAM_RANGES: Record<keyof ShaderParameters, { min: number; max: nu
 export const PARAM_KEYS = Object.keys(PARAM_RANGES) as (keyof ShaderParameters)[]
 
 export const VALID_DURATIONS = [5, 10, 20, 30]
-export const VALID_EFFECTS = ['none', 'grain', 'glow', 'chromatic', 'glass', 'dither', 'halftone'] as const
+export const VALID_EFFECTS = EFFECT_IDS
 export const VALID_RATIOS  = ['free', '16:9', '4:3', '1:1', '9:16'] as const
 export const MAX_COLORS = 8
 export const MIN_COLORS = 2

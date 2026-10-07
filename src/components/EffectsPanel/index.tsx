@@ -1,29 +1,11 @@
 // src/components/EffectsPanel/index.tsx
 import { useGradientStore } from '../../store/gradientStore'
-import type { EffectType } from '../../types/gradient'
 import { Slider } from '../ParameterPanel/Slider'
-import { POST_EFFECT_IDS } from '../../shaders/post'
-
-interface EffectDef {
-  id:       EffectType
-  label:    string
-  icon:     string
-  ready:    boolean
-}
-
-const EFFECTS: EffectDef[] = [
-  { id: 'none',      label: 'None',     icon: '○', ready: true  },
-  { id: 'grain',     label: 'Grain',    icon: '⁘', ready: true  },
-  { id: 'glow',      label: 'Glow',     icon: '◎', ready: true  },
-  { id: 'chromatic', label: 'Chroma',   icon: '◈', ready: true  },
-  { id: 'glass',     label: 'Glass',    icon: '◻', ready: true  },
-  { id: 'dither',    label: 'Dither',   icon: '▦', ready: true  },
-  { id: 'halftone',  label: 'Halftone', icon: '⊹', ready: true  },
-]
+import { EFFECTS, hasIntensity } from '../../constants/effects'
 
 export function EffectsPanel() {
   const { effect, setEffect, effectAmount, setEffectAmount } = useGradientStore()
-  const hasAmount = POST_EFFECT_IDS[effect] !== undefined
+  const hasAmount = hasIntensity(effect)
 
   return (
     <div className="flex flex-col gap-3">
@@ -33,22 +15,17 @@ export function EffectsPanel() {
         return (
           <button
             key={e.id}
-            onClick={() => e.ready && setEffect(e.id)}
-            disabled={!e.ready}
-            title={e.ready ? e.label : `${e.label} (coming soon)`}
+            onClick={() => setEffect(e.id)}
+            aria-label={e.label}
+            aria-pressed={active}
+            title={e.label}
             className="flex flex-col items-center gap-1 py-2 px-1 rounded-md transition-all"
             style={{
               border: active
                 ? '1px solid var(--accent)'
                 : '1px solid var(--border-soft)',
               background: active ? 'var(--accent-dim)' : 'var(--bg-panel)',
-              color: !e.ready
-                ? 'var(--text-muted)'
-                : active
-                ? 'var(--accent)'
-                : 'var(--text-secondary)',
-              opacity: !e.ready ? 0.45 : 1,
-              cursor: !e.ready ? 'default' : 'pointer',
+              color: active ? 'var(--accent)' : 'var(--text-secondary)',
             }}
           >
             <span className="text-[14px] leading-none select-none">{e.icon}</span>

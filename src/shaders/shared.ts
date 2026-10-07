@@ -90,7 +90,8 @@ float filmGrain(float lum) {
     fract(sin(frame * 0.17236) * 4831.5) * 200.0,
     fract(sin(frame * 0.21979) * 5927.3) * 200.0
   );
-  vec2 ft = floor(gl_FragCoord.xy) + temporal;
+  float grainCell = max(1.0, floor(u_resolution.y / 900.0 + 0.5));
+  vec2 ft = floor(gl_FragCoord.xy / grainCell) + temporal;
   float a = fract(sin(dot(ft,          vec2(127.1, 311.7))) * 43758.5453);
   float b = fract(sin(dot(ft + 97.31, vec2(311.7, 127.1))) * 43758.5453);
   float g = a + b - 1.0;
