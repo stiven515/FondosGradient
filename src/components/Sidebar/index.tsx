@@ -97,7 +97,12 @@ export function Sidebar() {
 
   if (collapsed) {
     return (
-      <aside aria-label={t('panel.controls')} className="flex w-11 flex-shrink-0 flex-col items-center pt-1">
+      <aside
+        aria-label={t('panel.controls')}
+        className={narrow
+          ? 'absolute left-5 top-5 z-20 rounded-ctl bg-raised shadow-raised'
+          : 'flex w-11 flex-shrink-0 flex-col items-center pt-1'}
+      >
         <IconButton label={t('panel.expand')} onClick={() => setCollapsed(false)}>
           <ChevronRight size={16} strokeWidth={1.9} aria-hidden="true" />
         </IconButton>
@@ -110,7 +115,7 @@ export function Sidebar() {
       as="aside"
       line
       aria-label={t('panel.controls')}
-      className={`flex-shrink-0 ${narrow ? 'absolute inset-y-2 left-2 z-30 shadow-pop' : 'h-full'}`}
+      className={`flex-shrink-0 ${narrow ? 'absolute left-2 top-2 z-30 h-[58%] shadow-pop' : 'h-full'}`}
       style={{ width: narrow ? 'min(300px, calc(100% - 16px))' : 300 }}
       fillClassName="flex flex-col overflow-hidden"
     >
@@ -124,6 +129,25 @@ export function Sidebar() {
       <div className="min-h-0 flex-1 overflow-y-auto">
         <Section title={t('panel.style')} hint={t('panel.styleHint')}>
           <StyleSelector />
+        </Section>
+
+        <Section
+          title={t('panel.parameters')}
+          action={
+            <button
+              type="button"
+              onClick={handleResetAll}
+              className="text-[11px] font-semibold text-ink-3 transition-colors hover:text-ink"
+            >
+              {t('panel.reset')}
+            </button>
+          }
+        >
+          <ParameterPanel />
+        </Section>
+
+        <Section title={t('panel.effects')}>
+          <EffectsPanel />
         </Section>
 
         <Section
@@ -227,25 +251,6 @@ export function Sidebar() {
               {t('palette.lock')}
             </Button>
           </div>
-        </Section>
-
-        <Section
-          title={t('panel.parameters')}
-          action={
-            <button
-              type="button"
-              onClick={handleResetAll}
-              className="text-[11px] font-semibold text-ink-3 transition-colors hover:text-ink"
-            >
-              {t('panel.reset')}
-            </button>
-          }
-        >
-          <ParameterPanel />
-        </Section>
-
-        <Section title={t('panel.effects')}>
-          <EffectsPanel />
         </Section>
       </div>
     </Cut>

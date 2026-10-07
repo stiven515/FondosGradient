@@ -7,6 +7,7 @@ import { LangToggle } from '../../ui/LangToggle'
 import { goTo } from '../../store/viewStore'
 import { useT, type TKey } from '../../i18n'
 import { Hero } from './Hero'
+import { HeroReadout } from './HeroReadout'
 import { StylesSection } from './StylesSection'
 import { EffectsSection } from './EffectsSection'
 import { ExportSection } from './ExportSection'
@@ -36,6 +37,9 @@ export function Landing() {
       >
         {t('hud.scroll')}
       </p>
+      <div className="transition-opacity duration-500" style={{ opacity: active === 0 ? 1 : 0 }} aria-hidden="true">
+        <HeroReadout />
+      </div>
       <p className="micro num m-0 flex items-center gap-3" role="img" aria-label={t('hud.section', { n: active + 1, total })}>
         <span className="text-ink">{pad(active + 1)}</span>
         <span aria-hidden="true" className="h-px w-10 bg-ink-3 opacity-50" />

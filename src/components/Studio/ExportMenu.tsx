@@ -119,6 +119,7 @@ export function ExportMenu() {
         aria-expanded={open}
         aria-haspopup="true"
         aria-label={t('export.open')}
+        title={t('export.open')}
         className="!px-2.5 sm:!px-4"
         trailing={<ArrowUpRight size={14} strokeWidth={2.4} aria-hidden="true" />}
       >

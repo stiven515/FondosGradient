@@ -38,7 +38,7 @@ export function Readout() {
     <footer className="micro num flex flex-shrink-0 items-center justify-between gap-4 px-5 pb-3 pt-1">
       <p className="m-0 flex min-w-0 items-center gap-2 truncate">
         <span className="truncate">{t(`style.${shader}` as TKey)}</span>
-        <span aria-hidden="true">·</span>
+        <span aria-hidden="true" className="hidden sm:inline">·</span>
         <span className="hidden whitespace-nowrap sm:inline">{t('readout.colors', { n: count })}</span>
         <span aria-hidden="true" className="hidden sm:inline">·</span>
         <span ref={sizeRef} className="hidden whitespace-nowrap sm:inline" />
