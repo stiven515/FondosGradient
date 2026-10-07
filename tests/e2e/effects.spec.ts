@@ -4,7 +4,7 @@ import {
   meanAbsDiff, luminanceSpread, equalNeighbourShare,
 } from './helpers'
 
-const STYLES = ['flow', 'beam', 'mesh', 'liquid', 'wave', 'silk', 'stripe']
+const STYLES = ['flow', 'beam', 'mesh', 'liquid', 'wave', 'silk', 'stripe', 'ribbon']
 const POST_EFFECTS = ['glow', 'chromatic', 'glass', 'dither', 'halftone']
 
 test.describe('styles', () => {

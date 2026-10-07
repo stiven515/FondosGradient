@@ -1,16 +1,17 @@
 # Gradient Studio
 
-Editor web para crear fondos de gradiente animados en tiempo real con WebGL. Elige un estilo, ajusta la paleta y los parámetros, aplica un efecto, y exporta un PNG o comparte el diseño con un link.
+Editor web para crear fondos de gradiente animados en tiempo real con WebGL. Incluye una landing con scroll y un estudio, en español e inglés. Elige un estilo, ajusta la paleta y los parámetros, aplica un efecto, y exporta un PNG o comparte el diseño con un link.
 
 ## Funciones
 
-- **7 estilos animados:** Flow, Beam, Mesh, Liquid, Wave, Silk y Stripe, con escala, curl, drift, openness, seed, velocidad y grain.
+- **8 estilos animados:** Flow, Beam, Mesh, Liquid, Wave, Silk, Stripe y Ribbon (cintas de vidrio), con escala, curl, drift, openness, seed, velocidad y grain.
 - **Paleta de 2 a 8 colores:** selector de color, input hex, presets, generador de paletas armónicas, bloqueo de colores, reordenamiento arrastrando y extracción de la paleta desde una imagen.
 - **6 efectos:** grain, glow, chromatic, glass, dither y halftone, con intensidad ajustable.
-- **Looks y diseños guardados:** 8 looks completos (estilo, paleta y efecto) y hasta 24 diseños propios guardados en el navegador.
+- **Looks y diseños guardados:** 9 looks completos (estilo, paleta y efecto) y hasta 24 diseños propios guardados en el navegador.
 - **Timeline:** barra de progreso con scrubbing, duración de 5, 10, 20 o 30 s y loop sin cortes (excepto en Flow).
 - **Exportar y compartir:** descarga en PNG, JPG o WebP a tamaño actual, 2× o 4K, grabación de un loop en video (MP4 o WebM según el navegador), copia como CSS (linear o mesh), link con todo el estado, relación de aspecto (Free, 16:9, 4:3, 1:1, 9:16) y pantalla completa.
 - **Accesible y responsive:** navegación completa con teclado, foco visible, respeta `prefers-reduced-motion` (arranca en pausa) y el panel de controles pasa a ser un drawer en pantallas estrechas.
+- **Bilingüe ES/EN:** selector de idioma en la landing y el estudio; las claves de traducción se validan en compilación.
 - **Undo/redo** y guardado automático en `localStorage`.
 
 ## Atajos
@@ -58,7 +59,10 @@ En CI se instala Chromium y corren solos en cada push y pull request.
 
 ```
 src/
-  components/   UI: TopBar, Sidebar, GradientCanvas, PlaybackBar, EffectsPanel, Toaster, HelpDialog...
+  components/   UI: Landing, Studio, Sidebar, GradientCanvas, PlaybackBar, EffectsPanel, Toaster, HelpDialog...
+  ui/           primitivas visuales: marco, pestaña con esquinas invertidas, esquinas cortadas, botones
+  i18n/         diccionarios es/en y hook useT
+  engine/       GradientRenderer independiente y miniaturas renderizadas con el motor real
   constants/    rangos de parámetros, estilos, registro de efectos y límites compartidos
   hooks/        useWebGL (contexto y render), useAnimation (loop), atajos
   shaders/      un shader por estilo, shared.ts (helpers GLSL), post.ts (efectos) y effectParams.ts (curvas de intensidad)

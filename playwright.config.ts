@@ -1,7 +1,7 @@
-import { defineConfig } from '@playwright/test'
+import { defineConfig, devices } from '@playwright/test'
 
-// Locally: PW_CHANNEL=chrome npx playwright test   (uses the installed Chrome, no download)
-// CI installs Chromium and leaves PW_CHANNEL unset.
+// Chromium only (what CI runs):  PW_CHANNEL=chrome npm run test:e2e   (PW_CHANNEL uses the installed Chrome)
+// Every browser, run by hand:    npm run test:e2e:all                 (needs: npx playwright install firefox webkit)
 export default defineConfig({
   testDir: 'tests/e2e',
   timeout: 90_000,
@@ -11,13 +11,23 @@ export default defineConfig({
   reporter: process.env.CI ? 'github' : 'list',
   use: {
     baseURL: 'http://localhost:4173',
-    channel: process.env.PW_CHANNEL || undefined,
     viewport: { width: 1280, height: 720 },
     acceptDownloads: true,
-    launchOptions: {
-      args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'],
-    },
   },
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: process.env.PW_CHANNEL || undefined,
+        launchOptions: {
+          args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'],
+        },
+      },
+    },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+  ],
   webServer: {
     command: 'npm run build && npm run preview -- --port 4173 --strictPort',
     url: 'http://localhost:4173',

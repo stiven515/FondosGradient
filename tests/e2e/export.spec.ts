@@ -1,6 +1,8 @@
 import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
-import { STATIC_SCENE, trackProblems, openApp, expectNoProblems } from './helpers'
+import {
+  STATIC_SCENE, trackProblems, openApp, expectNoProblems, stubClipboard, copiedText, supportsVideoRecording,
+} from './helpers'
 
 const canvasSize = (page: Page) =>
   page.evaluate(() => { const c = document.querySelector('canvas')!; return { w: c.width, h: c.height } })
@@ -65,38 +67,59 @@ test.describe('export', () => {
     expect(readFileSync(await download.path()).subarray(0, 2).toString('hex')).toBe('ffd8')
   })
 
-  test('records one loop as a playable video', async ({ page }) => {
+  test('records one loop as a playable video, or hides the option where the browser cannot', async ({ page }) => {
     test.setTimeout(60_000)
     const problems = trackProblems(page)
     await openApp(page, `shader=mesh&effect=glass&fx=0.5&dur=5`)
     await openExportMenu(page)
-    const [download] = await Promise.all([
-      page.waitForEvent('download', { timeout: 30_000 }),
-      page.getByRole('button', { name: 'Record loop (5s)' }).click(),
-    ])
-    expect(download.suggestedFilename()).toMatch(/^gradient-studio-\d+\.(mp4|webm)$/)
-    expect(readFileSync(await download.path()).length).toBeGreaterThan(10_000)
+    const record = page.getByRole('button', { name: 'Record loop (5s)' })
+
+    if (!(await supportsVideoRecording(page))) {
+      await expect(record).toHaveCount(0)
+      await expectNoProblems(page, problems)
+      return
+    }
+
+    // Assert on what the app hands to the browser (blob + file name) rather than on a real download:
+    // desktop Chrome can hold large downloads for a safety scan, which makes the saved file unreliable to read.
+    await page.evaluate(() => {
+      const w = window as unknown as { __saved: { name: string; type: string; size: number }[]; __lastBlob: { type: string; size: number } }
+      w.__saved = []
+      const create = URL.createObjectURL.bind(URL)
+      URL.createObjectURL = (b: Blob | MediaSource) => { w.__lastBlob = { type: (b as Blob).type, size: (b as Blob).size }; return create(b) }
+      HTMLAnchorElement.prototype.click = function () { if (this.download) w.__saved.push({ name: this.download, ...w.__lastBlob }) }
+    })
+    await record.click()
+    await expect.poll(
+      () => page.evaluate(() => (window as unknown as { __saved: unknown[] }).__saved.length),
+      { timeout: 30_000 },
+    ).toBe(1)
+
+    const [saved] = await page.evaluate(() => (window as unknown as { __saved: { name: string; type: string; size: number }[] }).__saved)
+    expect(saved.name).toMatch(/^gradient-studio-\d+\.(mp4|webm)$/)
+    expect(saved.type).toMatch(/^video\/(mp4|webm)$/)
+    expect(saved.size).toBeGreaterThan(10_000)
     await expect(page.getByText('Video saved')).toBeVisible()
     await expectNoProblems(page, problems)
   })
 
-  test('copies the palette as CSS', async ({ page, context }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  test('copies the palette as CSS', async ({ page }) => {
+    await stubClipboard(page)
     await openApp(page, `${STATIC_SCENE}&effect=none`)
     await openExportMenu(page)
     await page.getByRole('button', { name: 'Copy CSS (mesh)' }).click()
-    const css = await page.evaluate(() => navigator.clipboard.readText())
+    const css = await copiedText(page)
     expect(css).toContain('background-color: #0B1026;')
     expect(css.match(/radial-gradient/g)).toHaveLength(5)
   })
 })
 
 test.describe('sharing', () => {
-  test('a shared link restores the style, effect and intensity', async ({ page, context }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  test('a shared link restores the style, effect and intensity', async ({ page }) => {
+    await stubClipboard(page)
     await openApp(page, `shader=silk&effect=halftone&fx=0.8&speed=0&grain=0`)
     await page.getByRole('button', { name: 'Share' }).click()
-    const link = await page.evaluate(() => navigator.clipboard.readText())
+    const link = await copiedText(page)
     expect(link).toContain('shader=silk')
     expect(link).toContain('effect=halftone')
     expect(link).toContain('fx=0.80')
@@ -104,6 +127,6 @@ test.describe('sharing', () => {
     await page.evaluate(() => localStorage.clear())
     await page.goto(new URL(link).pathname + new URL(link).search)
     await expect(page.getByRole('button', { name: 'Select style' }).first()).toContainText('Silk')
-    await expect(page.getByRole('button', { name: 'Halftone', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Halftone', exact: true })).toHaveAttribute('aria-pressed', 'true')
   })
 })

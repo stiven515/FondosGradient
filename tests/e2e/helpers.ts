@@ -81,3 +81,21 @@ export function equalNeighbourShare(f: Frame): number {
   }
   return equal / total
 }
+
+// Playwright can only grant clipboard permissions in Chromium, so capture writes instead.
+export async function stubClipboard(page: Page) {
+  await page.addInitScript(() => {
+    const store = { text: '' }
+    Object.defineProperty(window, '__copied', { get: () => store.text })
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async (t: string) => { store.text = t }, readText: async () => store.text },
+    })
+  })
+}
+
+export const copiedText = (page: Page) => page.evaluate(() => (window as unknown as { __copied: string }).__copied)
+
+export const supportsVideoRecording = (page: Page) =>
+  page.evaluate(() => typeof MediaRecorder !== 'undefined' && typeof HTMLCanvasElement.prototype.captureStream === 'function')
+
