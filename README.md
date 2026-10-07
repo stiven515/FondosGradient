@@ -5,10 +5,11 @@ Editor web para crear fondos de gradiente animados en tiempo real con WebGL. Eli
 ## Funciones
 
 - **7 estilos animados:** Flow, Beam, Mesh, Liquid, Wave, Silk y Stripe, con escala, curl, drift, openness, seed, velocidad y grain.
-- **Paleta de 2 a 8 colores:** selector de color, input hex, presets, generador de paletas armónicas, bloqueo de colores y reordenamiento arrastrando.
+- **Paleta de 2 a 8 colores:** selector de color, input hex, presets, generador de paletas armónicas, bloqueo de colores, reordenamiento arrastrando y extracción de la paleta desde una imagen.
 - **6 efectos:** grain, glow, chromatic, glass, dither y halftone, con intensidad ajustable.
+- **Looks y diseños guardados:** 8 looks completos (estilo, paleta y efecto) y hasta 24 diseños propios guardados en el navegador.
 - **Timeline:** barra de progreso con scrubbing, duración de 5, 10, 20 o 30 s y loop sin cortes (excepto en Flow).
-- **Exportar y compartir:** descarga en PNG, JPG o WebP a tamaño actual, 2× o 4K, link con todo el estado, relación de aspecto (Free, 16:9, 4:3, 1:1, 9:16) y pantalla completa.
+- **Exportar y compartir:** descarga en PNG, JPG o WebP a tamaño actual, 2× o 4K, grabación de un loop en video (MP4 o WebM según el navegador), copia como CSS (linear o mesh), link con todo el estado, relación de aspecto (Free, 16:9, 4:3, 1:1, 9:16) y pantalla completa.
 - **Accesible y responsive:** navegación completa con teclado, foco visible, respeta `prefers-reduced-motion` (arranca en pausa) y el panel de controles pasa a ser un drawer en pantallas estrechas.
 - **Undo/redo** y guardado automático en `localStorage`.
 
@@ -45,7 +46,7 @@ src/
   hooks/        useWebGL (contexto y render), useAnimation (loop), atajos
   shaders/      un shader por estilo, shared.ts (helpers GLSL) y post.ts (efectos)
   store/        estado global (Zustand) y validación de lo guardado
-  utils/        URL compartible, timeline, export PNG, color y paletas
+  utils/        URL compartible, timeline, export de imagen y video, CSS, diseños guardados, color y paletas
 ```
 
 ## Link compartible
