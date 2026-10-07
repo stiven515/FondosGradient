@@ -7,10 +7,12 @@ import { EffectsPanel }   from '../EffectsPanel'
 import { ColorSwatch }    from '../ColorPalette/ColorSwatch'
 import { useGradientStore, DEFAULT_PARAMETERS } from '../../store/gradientStore'
 import { generateHarmoniousPalette } from '../../utils/palette'
+import { matches, useMediaQuery } from '../../utils/media'
 import type { ShaderParameters } from '../../types/gradient'
 
 export function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false)
+  const narrow = useMediaQuery('(max-width: 767px)')
+  const [collapsed, setCollapsed] = useState(() => matches('(max-width: 767px)'))
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
 
@@ -70,9 +72,13 @@ export function Sidebar() {
     <aside
       className="flex-shrink-0 flex flex-col overflow-hidden"
       style={{
-        width: 300,
+        width: narrow ? 'min(300px, 85vw)' : 300,
         background: 'var(--bg-sidebar)',
         borderRight: '1px solid var(--border-soft)',
+        ...(narrow && {
+          position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 30,
+          boxShadow: '8px 0 32px rgba(0,0,0,0.55)',
+        }),
       }}
     >
       {/* Header */}

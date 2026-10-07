@@ -30,6 +30,7 @@ export function GradientCanvas() {
       <canvas
         ref={canvasRef}
         className="w-full h-full block"
+        role="img"
         aria-label="Animated gradient canvas"
       />
       {status !== 'ok' && (

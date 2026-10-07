@@ -67,7 +67,7 @@ export function TopBar() {
           style={{ background: gradient }}
         />
         <span
-          className="text-[13px] font-semibold tracking-tight"
+          className="hidden sm:inline text-[13px] font-semibold tracking-tight"
           style={{ color: 'var(--text-primary)' }}
         >
           Gradient Studio

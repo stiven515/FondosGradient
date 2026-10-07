@@ -30,9 +30,10 @@ export function PlaybackBar() {
 
   return (
     <div
-      className="flex items-center gap-3 px-4 rounded-xl"
+      className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 rounded-xl pointer-events-auto"
       style={{
         height: 40,
+        maxWidth: '100%',
         background: 'rgba(10, 12, 18, 0.72)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
@@ -157,12 +158,22 @@ function Scrubber({ duration }: { duration: number }) {
 
   useEffect(() => {
     let raf = 0
-    function tick() {
+    function paint() {
+      const seconds = clock.elapsed / 1000
       const pct = Math.min(1, clock.elapsed / (duration * 1000))
+      const label = seconds.toFixed(1)
       if (fillRef.current) fillRef.current.style.transform = `scaleX(${pct})`
-      if (timeRef.current) timeRef.current.textContent = (clock.elapsed / 1000).toFixed(1) + 's'
+      if (timeRef.current) timeRef.current.textContent = label + 's'
+      if (trackRef.current) {
+        trackRef.current.setAttribute('aria-valuenow', label)
+        trackRef.current.setAttribute('aria-valuetext', `${label} of ${duration} seconds`)
+      }
+    }
+    function tick() {
+      paint()
       raf = requestAnimationFrame(tick)
     }
+    paint()
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
   }, [duration])
@@ -183,7 +194,7 @@ function Scrubber({ duration }: { duration: number }) {
         aria-valuemin={0}
         aria-valuemax={duration}
         className="relative cursor-pointer py-2"
-        style={{ width: 160, touchAction: 'none' }}
+        style={{ width: 'clamp(72px, 20vw, 160px)', touchAction: 'none' }}
         onPointerDown={e => {
           seekFromPointer(e.clientX)
           e.currentTarget.setPointerCapture(e.pointerId)
@@ -192,6 +203,8 @@ function Scrubber({ duration }: { duration: number }) {
           if (e.currentTarget.hasPointerCapture(e.pointerId)) seekFromPointer(e.clientX)
         }}
         onKeyDown={e => {
+          if (e.key === 'Home') { e.preventDefault(); clock.seekTo = 0; return }
+          if (e.key === 'End')  { e.preventDefault(); clock.seekTo = duration * 1000; return }
           const step = e.key === 'ArrowRight' ? 500 : e.key === 'ArrowLeft' ? -500 : 0
           if (step) { e.preventDefault(); clock.seekTo = clock.elapsed + step }
         }}

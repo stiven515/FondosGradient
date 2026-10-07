@@ -38,7 +38,6 @@ export function BottomArea() {
     <div
       className="flex flex-shrink-0"
       style={{
-        height: 88,
         borderTop: '1px solid var(--border-soft)',
         background: 'var(--bg)',
       }}

@@ -9,6 +9,7 @@ import type {
 import { generateId } from '../utils/color'
 import { DEFAULT_PARAMETERS } from '../constants/parameters'
 import { sanitizePersisted } from './persist'
+import { prefersReducedMotion } from '../utils/media'
 
 export { DEFAULT_PARAMETERS }
 
@@ -36,7 +37,7 @@ export const useGradientStore = create<Store>()(
       colors:       [...DEFAULT_COLORS],
       shader:       'flow',
       parameters:   { ...DEFAULT_PARAMETERS },
-      isPlaying:    true,
+      isPlaying:    !prefersReducedMotion(),
       isLooping:    true,
       history:      [],
       historyIndex: -1,

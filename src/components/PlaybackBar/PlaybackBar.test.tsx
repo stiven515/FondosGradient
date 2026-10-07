@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PlaybackBar } from './index'
 import { useGradientStore } from '../../store/gradientStore'
@@ -50,5 +50,13 @@ describe('PlaybackBar', () => {
     screen.getByRole('slider', { name: /playback position/i }).focus()
     await user.keyboard('{ArrowRight}')
     expect(clock.seekTo).toBe(2500)
+  })
+
+  it('exposes the current position to assistive tech', async () => {
+    clock.elapsed = 2500
+    render(<PlaybackBar />)
+    const slider = screen.getByRole('slider', { name: /playback position/i })
+    await waitFor(() => expect(slider).toHaveAttribute('aria-valuenow', '2.5'))
+    expect(slider).toHaveAttribute('aria-valuetext', '2.5 of 10 seconds')
   })
 })
