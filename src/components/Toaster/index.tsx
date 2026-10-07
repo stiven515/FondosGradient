@@ -7,19 +7,16 @@ function ToastItem({ toast }: { toast: Toast }) {
   const dismiss = useUiStore(s => s.dismissToast)
 
   useEffect(() => {
-    const t = setTimeout(() => dismiss(toast.id), LIFETIME[toast.tone])
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => dismiss(toast.id), LIFETIME[toast.tone])
+    return () => clearTimeout(timer)
   }, [toast.id, toast.tone, dismiss])
 
   return (
     <div
-      className="px-3 py-2 rounded-md text-[12px] pointer-events-auto"
-      style={{
-        background: 'var(--bg-elevated)',
-        border: `1px solid ${toast.tone === 'error' ? '#7F2D2D' : 'var(--border)'}`,
-        color: toast.tone === 'error' ? '#F2A5A5' : 'var(--text-primary)',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
-      }}
+      className={`pointer-events-auto rounded-[12px] px-3.5 py-2.5 text-[12.5px] font-semibold shadow-pop ${
+        toast.tone === 'error' ? 'bg-danger text-on-teal' : 'bg-ink text-on-teal'
+      }`}
+      style={{ animation: 'rise 0.3s var(--ease-out)' }}
     >
       {toast.message}
     </div>
@@ -32,7 +29,7 @@ export function Toaster() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed top-14 right-4 flex flex-col gap-2 items-end pointer-events-none"
+      className="pointer-events-none fixed right-6 top-[72px] flex flex-col items-end gap-2"
       style={{ zIndex: 60 }}
     >
       {toasts.map(t => <ToastItem key={t.id} toast={t} />)}

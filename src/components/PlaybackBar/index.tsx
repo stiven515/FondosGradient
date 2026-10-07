@@ -5,13 +5,15 @@ import { useGradientStore } from '../../store/gradientStore'
 import type { AspectRatioType } from '../../types/gradient'
 import { clock } from '../../utils/timeline'
 import { VALID_DURATIONS } from '../../constants/parameters'
+import { useT, type TKey } from '../../i18n'
 
 const ASPECT_OPTIONS: AspectRatioType[] = ['free', '16:9', '4:3', '1:1', '9:16']
-const ASPECT_LABELS: Record<AspectRatioType, string> = {
-  'free': 'Free', '16:9': '16:9', '4:3': '4:3', '1:1': '1:1', '9:16': '9:16'
-}
+
+const PILL = 'flex w-full items-center gap-1.5 rounded-[16px] bg-raised px-2 py-1.5 shadow-raised pointer-events-auto sm:w-auto sm:gap-2.5 sm:px-2.5'
+const SMALL_BTN = 'flex h-8 flex-shrink-0 items-center gap-1.5 rounded-ctl px-2 text-[11.5px] font-bold transition-colors duration-150 hover:bg-teal-soft'
 
 export function PlaybackBar() {
+  const t = useT()
   const {
     isPlaying, setPlaying, aspectRatio, setAspectRatio,
     isLooping, setLooping, duration, setDuration,
@@ -21,129 +23,94 @@ export function PlaybackBar() {
 
   useEffect(() => {
     if (!arOpen) return
-    function handler(e: MouseEvent) {
+    function onDown(e: MouseEvent) {
       if (arRef.current && !arRef.current.contains(e.target as Node)) setArOpen(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setArOpen(false) }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
   }, [arOpen])
 
   return (
-    <div
-      className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 rounded-xl pointer-events-auto"
-      style={{
-        height: 40,
-        maxWidth: '100%',
-        background: 'rgba(10, 12, 18, 0.72)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        border: '1px solid rgba(255,255,255,0.07)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.45)',
-      }}
-    >
-      {/* Play / Pause */}
+    <div className={PILL} style={{ maxWidth: '100%' }}>
       <button
+        type="button"
         onClick={() => {
           if (!isPlaying && clock.elapsed >= duration * 1000) clock.seekTo = 0
           setPlaying(!isPlaying)
         }}
-        aria-label={isPlaying ? 'Pause' : 'Play'}
-        className="flex items-center justify-center rounded-md transition-all"
-        style={{ width: 28, height: 28, color: 'var(--text-secondary)' }}
-        onMouseEnter={e => {
-          e.currentTarget.style.color = 'var(--text-primary)'
-          e.currentTarget.style.background = 'var(--bg-panel)'
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.color = 'var(--text-secondary)'
-          e.currentTarget.style.background = 'transparent'
-        }}
+        aria-label={isPlaying ? t('play.pause') : t('play.play')}
+        className="flex h-8 w-8 items-center justify-center rounded-ctl bg-teal text-on-teal transition-colors duration-150 hover:bg-teal-hover"
       >
         {isPlaying
-          ? <Pause size={13} strokeWidth={2} />
-          : <Play  size={13} strokeWidth={2} />
-        }
+          ? <Pause size={14} strokeWidth={2.2} aria-hidden="true" />
+          : <Play size={14} strokeWidth={2.2} aria-hidden="true" />}
       </button>
 
-      {/* Loop toggle */}
       <button
+        type="button"
         onClick={() => setLooping(!isLooping)}
-        aria-label={isLooping ? 'Disable loop' : 'Enable loop'}
-        className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] transition-all select-none"
-        style={{
-          color: isLooping ? 'var(--accent)' : 'var(--text-muted)',
-          background: isLooping ? 'var(--accent-glow)' : 'transparent',
-          border: `1px solid ${isLooping ? 'var(--accent-dim)' : 'transparent'}`,
-          fontWeight: 500,
-        }}
+        aria-label={isLooping ? t('play.loopOff') : t('play.loopOn')}
+        aria-pressed={isLooping}
+        className={`${SMALL_BTN} ${isLooping ? 'bg-teal-soft text-teal' : 'text-ink-3'}`}
       >
-        <Repeat2 size={11} strokeWidth={2} />
-        <span>Loop</span>
+        <Repeat2 size={14} strokeWidth={2} aria-hidden="true" />
+        <span className="hidden sm:inline">{t('play.loop')}</span>
       </button>
 
       <Scrubber duration={duration} />
 
       <button
+        type="button"
         onClick={() => {
           const next = VALID_DURATIONS[(VALID_DURATIONS.indexOf(duration) + 1) % VALID_DURATIONS.length]
           clock.seekTo = Math.min(clock.elapsed, next * 1000)
           setDuration(next)
         }}
-        aria-label={`Cycle duration, currently ${duration} seconds`}
-        title="Cycle duration"
-        className="px-2 py-1 rounded-md text-[11px] tabular-nums transition-colors"
-        style={{ color: 'var(--text-secondary)', fontWeight: 500, minWidth: 34 }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-panel)' }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+        aria-label={t('play.cycle', { n: duration })}
+        title={t('play.cycleTitle')}
+        className={`${SMALL_BTN} num min-w-[2.6rem] justify-center text-ink-2`}
       >
         {duration}s
       </button>
 
-      {/* Aspect ratio */}
       <div ref={arRef} className="relative">
         <button
-          onClick={() => setArOpen(!arOpen)}
-          className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] transition-all"
-          style={{
-            color: 'var(--text-secondary)',
-            background: arOpen ? 'var(--bg-panel)' : 'transparent',
-            border: `1px solid ${arOpen ? 'var(--border)' : 'transparent'}`,
-            fontWeight: 500,
-          }}
+          type="button"
+          onClick={() => setArOpen(o => !o)}
+          aria-expanded={arOpen}
+          aria-haspopup="true"
+          className={`${SMALL_BTN} ${arOpen ? 'bg-teal-soft' : ''} text-ink-2`}
         >
-          {ASPECT_LABELS[aspectRatio]}
-          <ChevronDown size={10} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+          {t(`ar.${aspectRatio}` as TKey)}
+          <ChevronDown size={12} strokeWidth={2.2} aria-hidden="true" className={`transition-transform duration-200 ${arOpen ? 'rotate-180' : ''}`} />
         </button>
 
         {arOpen && (
           <div
-            className="absolute bottom-full right-0 mb-1 rounded-md py-1 z-10"
-            style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border)',
-              minWidth: 80,
-            }}
+            className="absolute bottom-full right-0 z-10 mb-2 min-w-[5.5rem] rounded-[12px] bg-raised p-1 shadow-pop"
+            style={{ boxShadow: 'var(--shadow-pop), inset 0 0 0 1px var(--line)' }}
           >
-            {ASPECT_OPTIONS.map(ar => (
-              <button
-                key={ar}
-                onClick={() => { setAspectRatio(ar); setArOpen(false) }}
-                className="w-full text-left px-3 py-1.5 text-[11px] transition-colors"
-                style={{
-                  color: ar === aspectRatio ? 'var(--text-primary)' : 'var(--text-secondary)',
-                  background: ar === aspectRatio ? 'var(--accent-dim)' : 'transparent',
-                  fontWeight: ar === aspectRatio ? 600 : 400,
-                }}
-                onMouseEnter={e => {
-                  if (ar !== aspectRatio) e.currentTarget.style.background = 'var(--bg-panel)'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = ar === aspectRatio ? 'var(--accent-dim)' : 'transparent'
-                }}
-              >
-                {ASPECT_LABELS[ar]}
-              </button>
-            ))}
+            {ASPECT_OPTIONS.map(ar => {
+              const active = ar === aspectRatio
+              return (
+                <button
+                  key={ar}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => { setAspectRatio(ar); setArOpen(false) }}
+                  className={`block w-full rounded-[8px] px-3 py-1.5 text-left text-[12px] transition-colors duration-150 ${
+                    active ? 'bg-teal-soft font-bold text-ink' : 'font-semibold text-ink-2 hover:bg-sunken'
+                  }`}
+                >
+                  {t(`ar.${ar}` as TKey)}
+                </button>
+              )
+            })}
           </div>
         )}
       </div>
@@ -152,6 +119,7 @@ export function PlaybackBar() {
 }
 
 function Scrubber({ duration }: { duration: number }) {
+  const t = useT()
   const trackRef = useRef<HTMLDivElement>(null)
   const fillRef  = useRef<HTMLDivElement>(null)
   const timeRef  = useRef<HTMLSpanElement>(null)
@@ -166,7 +134,7 @@ function Scrubber({ duration }: { duration: number }) {
       if (timeRef.current) timeRef.current.textContent = label + 's'
       if (trackRef.current) {
         trackRef.current.setAttribute('aria-valuenow', label)
-        trackRef.current.setAttribute('aria-valuetext', `${label} of ${duration} seconds`)
+        trackRef.current.setAttribute('aria-valuetext', t('play.positionText', { now: label, total: duration }))
       }
     }
     function tick() {
@@ -176,7 +144,7 @@ function Scrubber({ duration }: { duration: number }) {
     paint()
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [duration])
+  }, [duration, t])
 
   function seekFromPointer(clientX: number) {
     const rect = trackRef.current!.getBoundingClientRect()
@@ -185,16 +153,16 @@ function Scrubber({ duration }: { duration: number }) {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none">
       <div
         ref={trackRef}
         role="slider"
         tabIndex={0}
-        aria-label="Playback position"
+        aria-label={t('play.position')}
         aria-valuemin={0}
         aria-valuemax={duration}
-        className="relative cursor-pointer py-2"
-        style={{ width: 'clamp(72px, 20vw, 160px)', touchAction: 'none' }}
+        className="relative min-w-10 flex-1 cursor-pointer py-3 sm:flex-none"
+        style={{ width: 'clamp(64px, 18vw, 170px)', touchAction: 'none' }}
         onPointerDown={e => {
           seekFromPointer(e.clientX)
           e.currentTarget.setPointerCapture(e.pointerId)
@@ -209,19 +177,11 @@ function Scrubber({ duration }: { duration: number }) {
           if (step) { e.preventDefault(); clock.seekTo = clock.elapsed + step }
         }}
       >
-        <div className="h-[3px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.10)' }}>
-          <div
-            ref={fillRef}
-            className="h-full origin-left"
-            style={{ background: 'var(--accent)', transform: 'scaleX(0)' }}
-          />
+        <div className="h-[3px] overflow-hidden rounded-full bg-line-2">
+          <div ref={fillRef} className="h-full origin-left bg-copper" style={{ transform: 'scaleX(0)' }} />
         </div>
       </div>
-      <span
-        ref={timeRef}
-        className="text-[11px] tabular-nums"
-        style={{ color: 'var(--text-muted)', fontWeight: 500, minWidth: 30, textAlign: 'right' }}
-      />
+      <span ref={timeRef} className="num hidden min-w-[2.2rem] text-right text-[11.5px] font-semibold text-ink-2 sm:inline" />
     </div>
   )
 }

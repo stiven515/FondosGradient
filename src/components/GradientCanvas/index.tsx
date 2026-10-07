@@ -1,54 +1,69 @@
 // src/components/GradientCanvas/index.tsx
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { useGradientStore } from '../../store/gradientStore'
 import { useWebGL } from '../../hooks/useWebGL'
 import { useAnimation } from '../../hooks/useAnimation'
-import { aspectRatioCss } from './aspectRatio'
+import { ratioValue, fitBox } from './aspectRatio'
 import { registerCanvas } from '../../utils/exportPng'
+import { useT } from '../../i18n'
 
 export function GradientCanvas() {
+  const t = useT()
+  const spaceRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const shader      = useGradientStore(s => s.shader)
   const aspectRatio = useGradientStore(s => s.aspectRatio)
   const { updateUniforms, resizeCanvas, drawFrame, status } = useWebGL(canvasRef, shader)
+  const [space, setSpace] = useState<{ w: number; h: number } | null>(null)
 
   useAnimation({ drawFrame, updateUniforms, resizeCanvas })
 
   useEffect(() => registerCanvas(canvasRef.current!), [])
 
-  const arCss = aspectRatioCss(aspectRatio)
+  // Track the room the canvas has so a fixed ratio can fill it without overflowing.
+  useEffect(() => {
+    const el = spaceRef.current
+    if (!el) return
+    const measure = () => setSpace({ w: el.clientWidth, h: el.clientHeight })
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  const ratio = ratioValue(aspectRatio)
+  const box = space && ratio !== null ? fitBox(space.w, space.h, ratio) : null
 
   return (
-    <div
-      className="relative rounded-2xl overflow-hidden"
-      style={{
-        width:       '100%',
-        height:      arCss ? 'auto' : '100%',
-        aspectRatio: arCss || undefined,
-      }}
-    >
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full block"
-        role="img"
-        aria-label="Animated gradient canvas"
-      />
-      {status !== 'ok' && (
-        <div
-          role="alert"
-          className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-center px-6"
-          style={{ background: 'var(--bg-panel)', color: 'var(--text-secondary)' }}
-        >
-          <span className="text-[13px]" style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
-            {status === 'unsupported' ? 'WebGL is not available' : 'This style failed to render'}
-          </span>
-          <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-            {status === 'unsupported'
-              ? 'Enable hardware acceleration or try a different browser.'
-              : 'Try another style or reload the page.'}
-          </span>
-        </div>
-      )}
+    <div ref={spaceRef} className="flex h-full w-full items-center justify-center">
+      <div
+        className="relative overflow-hidden rounded-canvas bg-sunken"
+        style={{
+          width:  box ? box.width : '100%',
+          height: box ? box.height : '100%',
+          viewTransitionName: 'stage',
+        } as React.CSSProperties}
+      >
+        <canvas
+          ref={canvasRef}
+          className="block h-full w-full"
+          role="img"
+          aria-label={t('canvas.label')}
+        />
+        {status !== 'ok' && (
+          <div
+            role="alert"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-frame px-6 text-center"
+          >
+            <span className="text-[14px] font-bold text-ink">
+              {status === 'unsupported' ? t('webgl.unsupported.title') : t('webgl.error.title')}
+            </span>
+            <span className="max-w-xs text-[12px] text-ink-2">
+              {status === 'unsupported' ? t('webgl.unsupported.body') : t('webgl.error.body')}
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

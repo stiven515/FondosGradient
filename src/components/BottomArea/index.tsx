@@ -1,51 +1,43 @@
-// src/components/BottomArea/index.tsx
+// src/components/BottomArea/index.tsx — the dock under the canvas: palettes, looks and saved designs
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { useGradientStore } from '../../store/gradientStore'
 import { toast } from '../../store/uiStore'
 import { LOOKS } from '../../constants/looks'
+import { PALETTE_PRESETS } from '../../constants/palettes'
 import { generateId } from '../../utils/color'
 import { loadSaved, saveDesign, removeDesign, type SavedDesign } from '../../utils/savedDesigns'
-import type { Design } from '../../types/gradient'
-
-/* ── Palette presets (colors only) ───────────────────────── */
-interface Preset { name: string; colors: string[] }
-
-const PRESETS: Preset[] = [
-  { name: 'Soft Pink',    colors: ['#FFB3BA', '#FFCCC9', '#FFDDD2', '#FFE8D6', '#FFF0E0'] },
-  { name: 'Lavender',     colors: ['#C5AEF0', '#D4B8F7', '#E0C8FB', '#EDD8FF', '#F7E8FF'] },
-  { name: 'Sky',          colors: ['#A8D8EA', '#B8E2F4', '#C8ECFE', '#D8F4FF', '#E8F9FF'] },
-  { name: 'Mint',         colors: ['#B5EAD7', '#C5F0E3', '#D5F7EE', '#E0FBF3', '#F0FFF9'] },
-  { name: 'Cream',        colors: ['#FFDAC1', '#FFE6CE', '#FFEEDD', '#FFF5EA', '#FFFAF5'] },
-  { name: 'Sunset',       colors: ['#FF9999', '#FFB380', '#FFD166', '#FF8566', '#FF6B6B'] },
-  { name: 'Deep Purple',  colors: ['#6B21A8', '#7E22CE', '#9333EA', '#A855F7', '#C084FC'] },
-  { name: 'Ocean',        colors: ['#0EA5E9', '#06B6D4', '#14B8A6', '#10B981', '#22D3EE'] },
-  { name: 'Gold',         colors: ['#F59E0B', '#FBBF24', '#FCD34D', '#FDE68A', '#FEF3C7'] },
-]
+import { t as translate, useT, type TKey } from '../../i18n'
+import { SnapshotThumb } from '../../ui/SnapshotThumb'
+import { Button } from '../../ui/Button'
+import type { Design, ShaderType } from '../../types/gradient'
 
 type Tab = 'palettes' | 'looks' | 'saved'
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'palettes', label: 'Palettes' },
-  { id: 'looks',    label: 'Looks' },
-  { id: 'saved',    label: 'Saved' },
+const TABS: { id: Tab; key: TKey }[] = [
+  { id: 'palettes', key: 'dock.palettes' },
+  { id: 'looks',    key: 'dock.looks' },
+  { id: 'saved',    key: 'dock.saved' },
 ]
 
 export function BottomArea() {
+  const t = useT()
   const { colors, setColors, pushHistory, applyDesign } = useGradientStore()
+  const shader = useGradientStore(s => s.shader)
+  const parameters = useGradientStore(s => s.parameters)
   const [tab, setTab] = useState<Tab>('palettes')
   const [activePreset, setActivePreset] = useState<string | null>(null)
   const [saved, setSaved] = useState<SavedDesign[]>(() => loadSaved())
   const [name, setName] = useState('')
 
-  function applyPreset(preset: Preset) {
+  function applyPreset(id: string, presetColors: string[]) {
     pushHistory()
-    const newColors = preset.colors.slice(0, colors.length).map((hex, i) => ({
+    const next = presetColors.slice(0, colors.length).map((hex, i) => ({
       id:     colors[i]?.id ?? generateId(),
       hex,
       locked: colors[i]?.locked ?? false,
     }))
-    setColors(newColors)
-    setActivePreset(preset.name)
+    setColors(next)
+    setActivePreset(id)
   }
 
   function currentDesign(): Design {
@@ -65,7 +57,7 @@ export function BottomArea() {
     saveDesign(name, currentDesign())
     setSaved(loadSaved())
     setName('')
-    toast('Design saved')
+    toast(translate('toast.designSaved'))
   }
 
   function remove(id: string) {
@@ -77,152 +69,139 @@ export function BottomArea() {
     const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
     if (!step) return
     e.preventDefault()
-    const next = TABS[(TABS.findIndex(t => t.id === tab) + step + TABS.length) % TABS.length]
+    const next = TABS[(TABS.findIndex(x => x.id === tab) + step + TABS.length) % TABS.length]
     setTab(next.id)
     document.getElementById(`tab-${next.id}`)?.focus()
   }
 
   return (
-    <div
-      className="flex flex-shrink-0"
-      style={{ borderTop: '1px solid var(--border-soft)', background: 'var(--bg)' }}
-    >
-      <div className="flex flex-col px-4 py-3 gap-2 flex-1 min-w-0">
-        <div className="flex items-center gap-4">
-          <div role="tablist" aria-label="Presets" className="flex items-center gap-3" onKeyDown={onTabKey}>
-            {TABS.map(t => (
+    <section className="flex flex-shrink-0 flex-col gap-2.5 border-t border-line px-5 pb-2 pt-3" aria-label={t('dock.label')}>
+      <div className="flex items-center gap-4">
+        <div role="tablist" aria-label={t('dock.label')} className="flex items-center gap-5" onKeyDown={onTabKey}>
+          {TABS.map(item => {
+            const active = tab === item.id
+            return (
               <button
-                key={t.id}
-                id={`tab-${t.id}`}
+                key={item.id}
+                id={`tab-${item.id}`}
+                type="button"
                 role="tab"
-                aria-selected={tab === t.id}
-                aria-controls="bottom-panel"
-                tabIndex={tab === t.id ? 0 : -1}
-                onClick={() => setTab(t.id)}
-                className="section-label transition-colors"
-                style={{ color: tab === t.id ? 'var(--text-primary)' : undefined }}
+                aria-selected={active}
+                aria-controls="dock-panel"
+                tabIndex={active ? 0 : -1}
+                onClick={() => setTab(item.id)}
+                className={`micro relative pb-1.5 transition-colors duration-150 ${active ? '!text-ink' : 'hover:!text-ink-2'}`}
               >
-                {t.label}
+                {t(item.key)}
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-x-0 bottom-0 h-0.5 origin-left rounded-full bg-teal transition-transform duration-300 ease-out"
+                  style={{ transform: active ? 'scaleX(1)' : 'scaleX(0)' }}
+                />
               </button>
-            ))}
-          </div>
-
-          {tab === 'saved' && (
-            <form
-              className="flex items-center gap-1.5 ml-auto"
-              onSubmit={e => { e.preventDefault(); save() }}
-            >
-              <input
-                id="design-name"
-                aria-label="Design name"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="Name this design"
-                maxLength={32}
-                className="text-[11px] rounded px-2 py-1 outline-none"
-                style={{ width: 150, background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-              />
-              <button
-                type="submit"
-                className="text-[11px] font-medium rounded px-2.5 py-1"
-                style={{ background: 'var(--accent)', color: '#fff' }}
-              >
-                Save
-              </button>
-            </form>
-          )}
+            )
+          })}
         </div>
 
-        <div
-          id="bottom-panel"
-          role="tabpanel"
-          aria-labelledby={`tab-${tab}`}
-          className="flex items-center gap-2 overflow-x-auto pb-0.5"
-          style={{ scrollbarWidth: 'none' }}
-        >
-          {tab === 'palettes' && PRESETS.map(preset => (
-            <PresetCard
-              key={preset.name}
-              name={preset.name}
-              colors={preset.colors}
-              active={activePreset === preset.name}
-              onClick={() => applyPreset(preset)}
+        {tab === 'saved' && (
+          <form className="ml-auto flex items-center gap-2" onSubmit={e => { e.preventDefault(); save() }}>
+            <input
+              id="design-name"
+              aria-label={t('dock.name')}
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder={t('dock.namePlaceholder')}
+              maxLength={32}
+              className="h-8 w-44 rounded-ctl bg-sunken px-3 text-[12px] text-ink outline-none transition-colors placeholder:text-ink-3 focus:bg-raised focus:shadow-[inset_0_0_0_1px_var(--teal)]"
             />
-          ))}
-
-          {tab === 'looks' && LOOKS.map(look => (
-            <PresetCard
-              key={look.name}
-              name={look.name}
-              colors={look.colors}
-              onClick={() => applyDesign(look)}
-            />
-          ))}
-
-          {tab === 'saved' && (saved.length === 0
-            ? <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>No saved designs yet. Name the current one and press Save.</span>
-            : saved.map(s => (
-              <PresetCard
-                key={s.id}
-                name={s.name}
-                colors={s.design.colors}
-                onClick={() => applyDesign(s.design)}
-                onRemove={() => remove(s.id)}
-              />
-            )))}
-        </div>
+            <Button type="submit" variant="primary" size="sm">{t('dock.save')}</Button>
+          </form>
+        )}
       </div>
-    </div>
+
+      <div
+        id="dock-panel"
+        role="tabpanel"
+        aria-labelledby={`tab-${tab}`}
+        className="flex items-start gap-3 overflow-x-auto pb-1.5"
+        style={{ scrollbarWidth: 'none' }}
+      >
+        {tab === 'palettes' && PALETTE_PRESETS.map(preset => (
+          <Card
+            key={preset.id}
+            name={t(preset.nameKey)}
+            active={activePreset === preset.id}
+            onClick={() => applyPreset(preset.id, preset.colors)}
+            request={{ shader, colors: preset.colors, params: parameters }}
+          />
+        ))}
+
+        {tab === 'looks' && LOOKS.map(look => (
+          <Card
+            key={look.id}
+            name={t(look.nameKey)}
+            onClick={() => applyDesign(look)}
+            request={{ shader: look.shader, colors: look.colors, params: look.parameters, effect: look.effect, amount: look.effectAmount }}
+          />
+        ))}
+
+        {tab === 'saved' && (saved.length === 0
+          ? <p className="py-5 text-[12px] text-ink-3">{t('dock.empty')}</p>
+          : saved.map(s => (
+            <Card
+              key={s.id}
+              name={s.name}
+              onClick={() => applyDesign(s.design)}
+              onRemove={() => remove(s.id)}
+              request={{
+                shader: s.design.shader as ShaderType,
+                colors: s.design.colors,
+                params: s.design.parameters,
+                effect: s.design.effect,
+                amount: s.design.effectAmount,
+              }}
+            />
+          )))}
+      </div>
+    </section>
   )
 }
 
-/* ── Preset card ─────────────────────────────────────────── */
-function PresetCard({ name, colors, active = false, onClick, onRemove }: {
+function Card({ name, active = false, onClick, onRemove, request }: {
   name: string
-  colors: string[]
   active?: boolean
   onClick: () => void
   onRemove?: () => void
+  request: Parameters<typeof SnapshotThumb>[0]['request']
 }) {
-  const gradient = `linear-gradient(135deg, ${colors.join(', ')})`
-
+  const t = useT()
   return (
-    <div className="relative flex-shrink-0 group">
+    <div className="group relative flex-shrink-0">
       <button
+        type="button"
         onClick={onClick}
         aria-label={name}
-        className="flex flex-col items-center gap-1.5 rounded-md transition-all"
-        style={{
-          padding: '4px 4px 3px',
-          border: `1px solid ${active ? 'var(--accent)' : 'var(--border-soft)'}`,
-          background: active ? 'var(--accent-dim)' : 'var(--bg-panel)',
-        }}
-        onMouseEnter={e => { if (!active) e.currentTarget.style.borderColor = 'var(--border)' }}
-        onMouseLeave={e => { if (!active) e.currentTarget.style.borderColor = 'var(--border-soft)' }}
         title={name}
+        aria-pressed={active}
+        className="flex flex-col items-start gap-1.5 rounded-[6px] text-left"
       >
-        <div className="w-14 h-7 rounded-sm flex-shrink-0" style={{ background: gradient }} />
-        <span
-          className="text-[9px] leading-none truncate"
-          style={{
-            maxWidth: 56,
-            color: active ? 'var(--accent)' : 'var(--text-muted)',
-            fontWeight: active ? 600 : 400,
-            whiteSpace: 'nowrap',
-          }}
-        >
+        <span className={`relative block transition-transform duration-200 ease-out group-hover:-translate-y-0.5 ${active ? 'drop-shadow-[0_0_0_var(--teal)]' : ''}`}>
+          <SnapshotThumb request={request} width={104} height={64} />
+          {active && <span aria-hidden="true" className="absolute inset-x-0 -bottom-1 h-0.5 rounded-full bg-teal" />}
+        </span>
+        <span className={`max-w-[104px] truncate text-[11px] leading-none ${active ? 'font-bold text-ink' : 'font-semibold text-ink-3'}`}>
           {name}
         </span>
       </button>
       {onRemove && (
         <button
+          type="button"
           onClick={onRemove}
-          aria-label={`Delete ${name}`}
-          title="Delete"
-          className="absolute -top-1 -right-1 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
-          style={{ width: 16, height: 16, background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+          aria-label={t('dock.delete', { name })}
+          title={t('dock.deleteTitle')}
+          className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-raised text-ink-2 opacity-0 shadow-raised transition-opacity duration-150 hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
         >
-          <X size={9} strokeWidth={2.5} />
+          <X size={11} strokeWidth={2.5} aria-hidden="true" />
         </button>
       )}
     </div>

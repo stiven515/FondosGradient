@@ -1,21 +1,51 @@
 // src/components/Sidebar/index.tsx
 import { useState, useCallback, useRef } from 'react'
-import { ChevronLeft, ChevronRight, Sparkles, Lock, GripVertical, ImagePlus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Sparkles, Lock, GripVertical, ImagePlus, Plus, Minus } from 'lucide-react'
 import { StyleSelector }  from '../StyleSelector'
 import { ParameterPanel } from '../ParameterPanel'
 import { EffectsPanel }   from '../EffectsPanel'
 import { ColorSwatch }    from '../ColorPalette/ColorSwatch'
 import { useGradientStore, DEFAULT_PARAMETERS } from '../../store/gradientStore'
 import { generateHarmoniousPalette } from '../../utils/palette'
-import { matches, useMediaQuery } from '../../utils/media'
+import { useMediaQuery } from '../../utils/media'
 import { paletteFromFile } from '../../utils/paletteFromFile'
 import { generateId } from '../../utils/color'
 import { toast } from '../../store/uiStore'
+import { t as translate, useT } from '../../i18n'
+import { Cut } from '../../ui/Cut'
+import { Button, IconButton } from '../../ui/Button'
+import { MAX_COLORS, MIN_COLORS } from '../../constants/parameters'
 import type { ShaderParameters } from '../../types/gradient'
 
+function Section({ title, hint, action, children }: {
+  title: string
+  hint?: string
+  action?: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <section className="flex flex-col gap-3.5 border-t border-line px-4 py-4 first:border-t-0">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-baseline gap-2">
+          <h2 className="micro">{title}</h2>
+          {hint && <span className="text-[10.5px] text-ink-3">{hint}</span>}
+        </div>
+        {action}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+const STEPPER = 'flex h-6 w-6 items-center justify-center rounded-[7px] bg-sunken text-ink-2 transition-colors hover:bg-teal-soft hover:text-ink disabled:opacity-35 disabled:hover:bg-sunken'
+
 export function Sidebar() {
+  const t = useT()
   const narrow = useMediaQuery('(max-width: 767px)')
-  const [collapsed, setCollapsed] = useState(() => matches('(max-width: 767px)'))
+  // Until the person picks, the panel follows the screen width; after that their choice wins.
+  const [manual, setManual] = useState<boolean | null>(null)
+  const collapsed = manual ?? narrow
+  const setCollapsed = setManual
   const fileRef = useRef<HTMLInputElement>(null)
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
@@ -46,15 +76,15 @@ export function Sidebar() {
     try {
       const hexes = await paletteFromFile(file, 5)
       if (hexes.length < 2) {
-        toast('Not enough color variety in that image', 'error')
+        toast(translate('toast.imageLowVariety'), 'error')
         return
       }
       const current = useGradientStore.getState().colors
       pushHistory()
       setColors(hexes.map((hex, i) => ({ id: current[i]?.id ?? generateId(), hex, locked: false })))
-      toast('Palette extracted from image')
+      toast(translate('toast.paletteFromImage'))
     } catch {
-      toast('Could not read that image', 'error')
+      toast(translate('toast.imageUnreadable'), 'error')
     }
   }, [pushHistory, setColors])
 
@@ -65,136 +95,72 @@ export function Sidebar() {
     )
   }, [pushHistory, setParameter])
 
-  /* ── Collapsed state ─────────────────────────────────── */
   if (collapsed) {
     return (
-      <div
-        className="flex-shrink-0 flex flex-col items-center pt-3"
-        style={{
-          width: 36,
-          background: 'var(--bg-sidebar)',
-          borderRight: '1px solid var(--border-soft)',
-        }}
-      >
-        <button
-          onClick={() => setCollapsed(false)}
-          aria-label="Expand controls"
-          className="flex items-center justify-center rounded-md transition-colors"
-          style={{ width: 24, height: 24, color: 'var(--text-muted)' }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-        >
-          <ChevronRight size={14} strokeWidth={1.75} />
-        </button>
-      </div>
+      <aside aria-label={t('panel.controls')} className="flex w-11 flex-shrink-0 flex-col items-center pt-1">
+        <IconButton label={t('panel.expand')} onClick={() => setCollapsed(false)}>
+          <ChevronRight size={16} strokeWidth={1.9} aria-hidden="true" />
+        </IconButton>
+      </aside>
     )
   }
 
-  /* ── Expanded ─────────────────────────────────────────── */
   return (
-    <aside
-      className="flex-shrink-0 flex flex-col overflow-hidden"
-      style={{
-        width: narrow ? 'min(300px, 85vw)' : 300,
-        background: 'var(--bg-sidebar)',
-        borderRight: '1px solid var(--border-soft)',
-        ...(narrow && {
-          position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 30,
-          boxShadow: '8px 0 32px rgba(0,0,0,0.55)',
-        }),
-      }}
+    <Cut
+      as="aside"
+      line
+      aria-label={t('panel.controls')}
+      className={`flex-shrink-0 ${narrow ? 'absolute inset-y-2 left-2 z-30 shadow-pop' : 'h-full'}`}
+      style={{ width: narrow ? 'min(300px, calc(100% - 16px))' : 300 }}
+      fillClassName="flex flex-col overflow-hidden"
     >
-      {/* Header */}
-      <div
-        className="flex items-center justify-between flex-shrink-0 px-4"
-        style={{
-          height: 40,
-          borderBottom: '1px solid var(--border-soft)',
-        }}
-      >
-        <span className="section-label">Controls</span>
-        <button
-          onClick={() => setCollapsed(true)}
-          aria-label="Collapse controls"
-          className="flex items-center justify-center rounded-md transition-colors"
-          style={{ width: 24, height: 24, color: 'var(--text-muted)' }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-        >
-          <ChevronLeft size={14} strokeWidth={1.75} />
-        </button>
+      <div className="flex h-12 flex-shrink-0 items-center justify-between border-b border-line px-4">
+        <span className="micro">{t('panel.controls')}</span>
+        <IconButton label={t('panel.collapse')} onClick={() => setCollapsed(true)}>
+          <ChevronLeft size={16} strokeWidth={1.9} aria-hidden="true" />
+        </IconButton>
       </div>
 
-      {/* Scrollable sections */}
-      <div className="flex-1 overflow-y-auto">
-
-        {/* STYLE */}
-        <Section>
-          <SectionHeader label="Style" hint="S to cycle" />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <Section title={t('panel.style')} hint={t('panel.styleHint')}>
           <StyleSelector />
         </Section>
 
-        {/* PALETTE */}
-        <Section>
-          <SectionHeader label="Palette">
-            <div className="flex items-center gap-1">
+        <Section
+          title={t('panel.palette')}
+          action={
+            <div className="flex items-center gap-1.5">
               <button
+                type="button"
                 onClick={() => { pushHistory(); removeColor(colors[colors.length - 1].id) }}
-                disabled={colors.length <= 2}
-                aria-label="Remove color"
-                className="flex items-center justify-center rounded transition-all text-sm"
-                style={{
-                  width: 20, height: 20,
-                  color: colors.length <= 2 ? 'var(--text-muted)' : 'var(--text-secondary)',
-                  background: 'var(--bg-panel)',
-                  border: '1px solid var(--border)',
-                  cursor: colors.length <= 2 ? 'not-allowed' : 'pointer',
-                }}
-                onMouseEnter={e => {
-                  if (colors.length > 2) e.currentTarget.style.color = 'var(--text-primary)'
-                }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)' }}
+                disabled={colors.length <= MIN_COLORS}
+                aria-label={t('palette.remove')}
+                className={STEPPER}
               >
-                −
+                <Minus size={12} strokeWidth={2.2} aria-hidden="true" />
               </button>
-              <span
-                className="text-[11px] tabular-nums"
-                style={{ color: 'var(--text-muted)', minWidth: 12, textAlign: 'center' }}
-              >
-                {colors.length}
-              </span>
+              <span className="num min-w-3 text-center text-[12px] font-semibold text-ink">{colors.length}</span>
               <button
+                type="button"
                 onClick={() => { pushHistory(); addColor() }}
-                disabled={colors.length >= 8}
-                aria-label="Add color"
-                className="flex items-center justify-center rounded transition-all text-sm"
-                style={{
-                  width: 20, height: 20,
-                  color: colors.length >= 8 ? 'var(--text-muted)' : 'var(--text-secondary)',
-                  background: 'var(--bg-panel)',
-                  border: '1px solid var(--border)',
-                  cursor: colors.length >= 8 ? 'not-allowed' : 'pointer',
-                }}
-                onMouseEnter={e => {
-                  if (colors.length < 8) e.currentTarget.style.color = 'var(--text-primary)'
-                }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)' }}
+                disabled={colors.length >= MAX_COLORS}
+                aria-label={t('palette.add')}
+                className={STEPPER}
               >
-                +
+                <Plus size={12} strokeWidth={2.2} aria-hidden="true" />
               </button>
             </div>
-          </SectionHeader>
-
-          {/* Individual color rows — swatch + hex input + lock/copy/remove */}
-          <div className="flex flex-col gap-1">
+          }
+        >
+          <div className="flex flex-col gap-1.5">
             {colors.map((color, i) => (
               <div
                 key={color.id}
-                className="flex items-center gap-1 rounded transition-opacity"
+                className="flex items-center gap-1 rounded-ctl transition-[opacity,box-shadow] duration-150"
                 style={{
                   opacity: dragFrom === i ? 0.4 : 1,
                   boxShadow: dragOver === i && dragFrom !== i
-                    ? `0 ${dragFrom !== null && dragFrom < i ? 2 : -2}px 0 0 var(--accent)`
+                    ? `0 ${dragFrom !== null && dragFrom < i ? 2 : -2}px 0 0 var(--teal)`
                     : 'none',
                 }}
                 onDragOver={e => { e.preventDefault(); setDragOver(i) }}
@@ -208,17 +174,16 @@ export function Sidebar() {
                     setDragFrom(i)
                   }}
                   onDragEnd={() => { setDragFrom(null); setDragOver(null) }}
-                  aria-label={`Drag to reorder ${color.hex}`}
-                  title="Drag to reorder"
-                  className="flex items-center cursor-grab active:cursor-grabbing"
-                  style={{ color: 'var(--text-muted)' }}
+                  aria-label={t('palette.drag', { hex: color.hex })}
+                  title={t('palette.dragTitle')}
+                  className="flex cursor-grab items-center text-ink-3 active:cursor-grabbing"
                 >
-                  <GripVertical size={12} strokeWidth={1.5} />
+                  <GripVertical size={14} strokeWidth={1.6} aria-hidden="true" />
                 </span>
-                <div className="flex-1 min-w-0" onFocusCapture={pushHistory}>
+                <div className="min-w-0 flex-1" onFocusCapture={pushHistory}>
                   <ColorSwatch
                     color={color}
-                    canRemove={colors.length > 2}
+                    canRemove={colors.length > MIN_COLORS}
                     onUpdate={updateColor}
                     onRemove={id => { pushHistory(); removeColor(id) }}
                     onToggleLock={toggleLock}
@@ -228,128 +193,61 @@ export function Sidebar() {
             ))}
           </div>
 
-          {/* Generate + Lock All */}
-          <div className="flex gap-2 mt-1">
-            <button
-              onClick={handleGenerate}
-              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md transition-all text-[12px] font-medium"
-              style={{
-                background: 'var(--bg-panel)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-primary)',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = 'var(--accent-dim)'
-                e.currentTarget.style.background = 'var(--accent-glow)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = 'var(--border)'
-                e.currentTarget.style.background = 'var(--bg-panel)'
-              }}
-            >
-              <Sparkles size={11} strokeWidth={2} />
-              Generate
-            </button>
-            <button
+          <div className="grid grid-cols-2 gap-1.5">
+            <Button variant="outline" size="sm" className="col-span-2" onClick={handleGenerate} icon={<Sparkles size={12} strokeWidth={2.2} aria-hidden="true" />}>
+              {t('palette.generate')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => fileRef.current?.click()}
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md transition-all text-[12px] font-medium"
-              style={{
-                background: 'var(--bg-panel)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-secondary)',
-              }}
-              aria-label="Extract palette from image"
-              title="Extract palette from an image"
+              aria-label={t('palette.imageAria')}
+              title={t('palette.imageTitle')}
+              icon={<ImagePlus size={12} strokeWidth={2.2} aria-hidden="true" />}
             >
-              <ImagePlus size={11} strokeWidth={2} />
-              Image
-            </button>
+              {t('palette.image')}
+            </Button>
             <input
               ref={fileRef}
               type="file"
               accept="image/*"
               onChange={handleImage}
-              aria-label="Palette image"
+              aria-label={t('palette.imageInput')}
               className="sr-only"
               tabIndex={-1}
             />
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={lockAll}
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md transition-all text-[12px] font-medium"
-              style={{
-                background: 'var(--bg-panel)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-secondary)',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = '#2D3544'
-                e.currentTarget.style.color = 'var(--text-primary)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = 'var(--border)'
-                e.currentTarget.style.color = 'var(--text-secondary)'
-              }}
-              aria-label="Lock all colors"
-              title="Lock all colors"
+              aria-label={t('palette.lockAll')}
+              title={t('palette.lockAll')}
+              icon={<Lock size={12} strokeWidth={2.2} aria-hidden="true" />}
             >
-              <Lock size={11} strokeWidth={2} />
-              Lock
-            </button>
+              {t('palette.lock')}
+            </Button>
           </div>
         </Section>
 
-        {/* PARAMETERS */}
-        <Section>
-          <SectionHeader label="Parameters">
+        <Section
+          title={t('panel.parameters')}
+          action={
             <button
+              type="button"
               onClick={handleResetAll}
-              className="text-[10px] transition-colors"
-              style={{ color: 'var(--text-muted)', fontWeight: 500 }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+              className="text-[11px] font-semibold text-ink-3 transition-colors hover:text-ink"
             >
-              Reset all
+              {t('panel.reset')}
             </button>
-          </SectionHeader>
+          }
+        >
           <ParameterPanel />
         </Section>
 
-        {/* EFFECTS */}
-        <Section>
-          <SectionHeader label="Effects" />
+        <Section title={t('panel.effects')}>
           <EffectsPanel />
         </Section>
-
       </div>
-    </aside>
-  )
-}
-
-/* ── Section wrapper ──────────────────────────────────────── */
-function Section({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      className="flex flex-col gap-3 px-4 py-3"
-      style={{ borderBottom: '1px solid var(--border-soft)' }}
-    >
-      {children}
-    </div>
-  )
-}
-
-/* ── Section header ───────────────────────────────────────── */
-function SectionHeader({
-  label, hint, children,
-}: { label: string; hint?: string; children?: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <span className="section-label">{label}</span>
-        {hint && (
-          <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{hint}</span>
-        )}
-      </div>
-      {children}
-    </div>
+    </Cut>
   )
 }

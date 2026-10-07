@@ -5,6 +5,7 @@ import { BottomArea } from './index'
 import { useGradientStore } from '../../store/gradientStore'
 import { useUiStore } from '../../store/uiStore'
 import { LOOKS } from '../../constants/looks'
+import { en } from '../../i18n/en'
 import { loadSaved } from '../../utils/savedDesigns'
 
 beforeEach(() => {
@@ -28,8 +29,8 @@ describe('BottomArea', () => {
     const user = userEvent.setup()
     render(<BottomArea />)
     await openTab(user, /looks/i)
-    const look = LOOKS.find(l => l.name === 'Neon Halftone')!
-    await user.click(screen.getByRole('button', { name: look.name }))
+    const look = LOOKS.find(l => l.id === 'neon-halftone')!
+    await user.click(screen.getByRole('button', { name: en[look.nameKey] }))
     const s = useGradientStore.getState()
     expect(s.shader).toBe(look.shader)
     expect(s.effect).toBe('halftone')

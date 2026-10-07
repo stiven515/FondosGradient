@@ -4,6 +4,7 @@ import { fireEvent } from '@testing-library/react'
 import { useKeyboardShortcuts } from './useKeyboardShortcuts'
 import { useGradientStore } from '../store/gradientStore'
 import { useUiStore } from '../store/uiStore'
+import { SHADER_TYPES } from '../constants/shaders'
 
 const hexes = () => useGradientStore.getState().colors.map(c => c.hex).join()
 
@@ -36,10 +37,10 @@ describe('useKeyboardShortcuts', () => {
   it('S cycles to the next style and wraps around', () => {
     setup()
     fireEvent.keyDown(window, { key: 's' })
-    expect(useGradientStore.getState().shader).toBe('beam')
-    useGradientStore.setState({ shader: 'stripe' })
+    expect(useGradientStore.getState().shader).toBe(SHADER_TYPES[1])
+    useGradientStore.setState({ shader: SHADER_TYPES[SHADER_TYPES.length - 1] })
     fireEvent.keyDown(window, { key: 's' })
-    expect(useGradientStore.getState().shader).toBe('flow')
+    expect(useGradientStore.getState().shader).toBe(SHADER_TYPES[0])
   })
 
   it('does not hijack Tab so keyboard navigation keeps working', () => {

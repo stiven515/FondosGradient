@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { Sidebar } from './index'
 import { useGradientStore } from '../../store/gradientStore'
 import { useUiStore } from '../../store/uiStore'
@@ -76,3 +76,50 @@ describe('Sidebar palette from image', () => {
     expect(hexes()).toEqual(['#111111', '#222222', '#333333'])
   })
 })
+
+describe('Sidebar width behaviour', () => {
+  // A controllable matchMedia: flip `setNarrow` to simulate the window being resized.
+  function stubWidth(initialNarrow: boolean) {
+    let narrow = initialNarrow
+    const listeners = new Set<() => void>()
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      get matches() { return narrow && query.includes('max-width') },
+      media: query,
+      addEventListener: (_: string, cb: () => void) => listeners.add(cb),
+      removeEventListener: (_: string, cb: () => void) => listeners.delete(cb),
+    }))
+    return (value: boolean) => { narrow = value; act(() => listeners.forEach(l => l())) }
+  }
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('starts expanded on a wide screen', () => {
+    stubWidth(false)
+    render(<Sidebar />)
+    expect(screen.getByRole('button', { name: 'Collapse controls' })).toBeInTheDocument()
+  })
+
+  it('starts collapsed on a narrow screen', () => {
+    stubWidth(true)
+    render(<Sidebar />)
+    expect(screen.getByRole('button', { name: 'Expand controls' })).toBeInTheDocument()
+  })
+
+  it('follows the screen width until the person chooses', () => {
+    const setNarrow = stubWidth(true)
+    render(<Sidebar />)
+    expect(screen.getByRole('button', { name: 'Expand controls' })).toBeInTheDocument()
+    setNarrow(false)
+    expect(screen.getByRole('button', { name: 'Collapse controls' })).toBeInTheDocument()
+  })
+
+  it('keeps the person\'s choice when the width changes afterwards', () => {
+    const setNarrow = stubWidth(false)
+    render(<Sidebar />)
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse controls' }))
+    expect(screen.getByRole('button', { name: 'Expand controls' })).toBeInTheDocument()
+    setNarrow(true)
+    setNarrow(false)
+    expect(screen.getByRole('button', { name: 'Expand controls' })).toBeInTheDocument()
+  })
+})
+
