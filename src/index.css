@@ -2,50 +2,253 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Design tokens ─────────────────────────────────────────── */
+/* ── Tokens ────────────────────────────────────────────────── */
 :root {
-  --bg:           #080A0D;
-  --bg-sidebar:   #0B0D10;
-  --bg-panel:     #111318;
-  --bg-elevated:  #161B24;
-  --border:       #1D222A;
-  --border-soft:  #161B20;
-  --text-primary: #F5F7FA;
-  --text-secondary: #8B93A1;
-  --text-muted:   #5F6875;
-  --accent:       #5B6EF5;
-  --accent-dim:   rgba(91,110,245,0.15);
-  --accent-glow:  rgba(91,110,245,0.08);
-  --track:        #1D222A;
-  --radius-sm:    4px;
-  --radius-md:    6px;
-  --radius-lg:    10px;
+  /* Surfaces: a cool-grey page holding a lighter frame */
+  --page:   #E3E8EC;
+  --frame:  #F3F6F8;
+  --raised: #FBFCFD;
+  --sunken: #E8EDF0;
+  /* Opaque tint for fills that sit on top of an outline layer, where a translucent colour would show it through. */
+  --wash:   #E2EDEF;
+
+  /* Ink: deep teal-navy, never pure black or grey */
+  --ink:   #12343B;
+  --ink-2: #3F5A61;
+  --ink-3: #567078;
+  --line:   #D2D9DE;
+  --line-2: #B4BFC6;
+
+  /* Action and the single warm accent */
+  --teal:       #1D6670;
+  --teal-hover: #17555E;
+  --teal-soft:  rgba(29, 102, 112, 0.11);
+  --on-teal:    #F3F8F9;
+  --copper:     #B8643F;
+  --copper-ink: #94492A;
+  --danger:     #A33A2E;
+  --danger-soft: rgba(163, 58, 46, 0.1);
+
+  /* Shape */
+  --r-frame:  22px;
+  --r-canvas: 18px;
+  --r-ctl:    10px;
+  --cut:      10px;
+
+  /* Depth: offset + soft blur, tinted from the ink */
+  --shadow-raised: 0 1px 2px rgba(18, 52, 59, 0.07), 0 16px 32px -16px rgba(18, 52, 59, 0.26);
+  --shadow-pop:    0 2px 4px rgba(18, 52, 59, 0.08), 0 22px 44px -18px rgba(18, 52, 59, 0.34);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:  cubic-bezier(0.7, 0, 0.84, 0);
+
+  --font: 'Hanken Grotesk Variable', 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  color-scheme: light;
 }
 
-/* ── Reset ─────────────────────────────────────────────────── */
+/* ── Base ──────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
-html, body, #root {
-  height: 100%;
+html, body, #root { height: 100%; }
+html { background: var(--page); }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.45;
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
 }
 
-body {
-  background: var(--bg);
-  color: var(--text-primary);
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI',
-               system-ui, 'Helvetica Neue', sans-serif;
-  font-size: 14px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+button:disabled { cursor: not-allowed; }
+
+::selection { background: var(--teal); color: var(--on-teal); }
+
+:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
-/* ── Accessibility ─────────────────────────────────────────── */
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+/* ── Type roles ────────────────────────────────────────────── */
+.micro {
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
 }
+
+.num { font-variant-numeric: tabular-nums; }
+
+.heading-caps {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+
+/* ── Chamfered corners: top-right and bottom-left are cut ───── */
+.cut {
+  --c: var(--cut);
+  clip-path: polygon(0 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, var(--c) 100%, 0 calc(100% - var(--c)));
+}
+
+/* A 1px outline on a clipped shape: the outer layer is the line, the inner layer is the fill. */
+.cut-line { background: var(--line-2); padding: 1px; display: flex; flex-direction: column; }
+.cut-line > .cut-fill {
+  --c: calc(var(--cut) - 0.5px);
+  clip-path: polygon(0 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, var(--c) 100%, 0 calc(100% - var(--c)));
+  background: var(--raised);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ── Tab set into the top edge of the frame, with inverted corners ── */
+.notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  background: var(--page);
+  border-radius: 0 0 var(--r-frame) var(--r-frame);
+}
+.notch::before, .notch::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: var(--r-frame);
+  height: var(--r-frame);
+  pointer-events: none;
+}
+.notch::before {
+  left: calc(var(--r-frame) * -1);
+  background: radial-gradient(circle at 0 100%, transparent calc(var(--r-frame) - 0.5px), var(--page) var(--r-frame));
+}
+.notch::after {
+  right: calc(var(--r-frame) * -1);
+  background: radial-gradient(circle at 100% 100%, transparent calc(var(--r-frame) - 0.5px), var(--page) var(--r-frame));
+}
+
+/* ── Tab hugging the frame's top-left corner, with inverted corners where it meets the edges ── */
+.tab-left {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  background: var(--page);
+  border-radius: 0 0 var(--r-frame) 0;
+}
+.tab-left::before, .tab-left::after {
+  content: '';
+  position: absolute;
+  width: var(--r-frame);
+  height: var(--r-frame);
+  pointer-events: none;
+}
+.tab-left::after {
+  top: 0;
+  right: calc(var(--r-frame) * -1);
+  background: radial-gradient(circle at 100% 100%, transparent calc(var(--r-frame) - 0.5px), var(--page) var(--r-frame));
+}
+.tab-left::before {
+  left: 0;
+  bottom: calc(var(--r-frame) * -1);
+  background: radial-gradient(circle at 100% 100%, transparent calc(var(--r-frame) - 0.5px), var(--page) var(--r-frame));
+}
+
+/* ── Range slider ──────────────────────────────────────────── */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+  background: linear-gradient(
+    to right,
+    var(--teal) 0%,
+    var(--teal) var(--fill, 0%),
+    var(--line-2) var(--fill, 0%),
+    var(--line-2) 100%
+  );
+}
+input[type='range']:focus-visible { outline: 2px solid var(--teal); outline-offset: 6px; }
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--raised);
+  border: 2px solid var(--teal);
+  box-shadow: 0 1px 3px rgba(18, 52, 59, 0.3);
+  transition: transform 0.16s var(--ease-out), box-shadow 0.16s var(--ease-out);
+}
+input[type='range']::-webkit-slider-thumb:hover { transform: scale(1.15); box-shadow: 0 0 0 5px var(--teal-soft), 0 1px 3px rgba(18, 52, 59, 0.3); }
+
+input[type='range']::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--raised);
+  border: 2px solid var(--teal);
+  box-shadow: 0 1px 3px rgba(18, 52, 59, 0.3);
+  transition: transform 0.16s var(--ease-out);
+}
+input[type='range']::-moz-range-thumb:hover { transform: scale(1.15); }
+
+/* ── Scrollbars ────────────────────────────────────────────── */
+* { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
+
+/* ── Entrance, used once per element and only from a visible default ── */
+@keyframes rise {
+  from { opacity: 0; transform: translate3d(0, 18px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes blob {
+  0%   { border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%; }
+  33%  { border-radius: 53% 47% 51% 49% / 48% 52% 48% 52%; }
+  66%  { border-radius: 48% 52% 48% 52% / 52% 48% 53% 47%; }
+  100% { border-radius: 51% 49% 53% 47% / 47% 51% 49% 53%; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Armed by <Reveal> just before it scrolls into view; content is visible until then. */
+.reveal[data-in='true'] {
+  animation: rise 0.9s var(--ease-out) var(--d, 0s) both;
+}
+
+/* ── View transitions: the hero frame becomes the studio canvas ── */
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: 0.28s; animation-timing-function: var(--ease-out); }
+::view-transition-group(stage) { animation-duration: 0.62s; animation-timing-function: var(--ease-out); }
+::view-transition-old(stage), ::view-transition-new(stage) { height: 100%; object-fit: cover; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -54,76 +257,5 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-}
-
-/* ── Range slider — premium filled track ───────────────────── */
-input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 2px;
-  border-radius: 1px;
-  outline: none;
-  cursor: pointer;
-  width: 100%;
-  background: linear-gradient(
-    to right,
-    var(--accent) 0%,
-    var(--accent) var(--fill, 0%),
-    var(--track) var(--fill, 0%),
-    var(--track) 100%
-  );
-  transition: opacity 0.15s;
-}
-
-input[type="range"]:hover {
-  opacity: 0.9;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--text-primary);
-  cursor: pointer;
-  box-shadow: 0 0 0 2px rgba(91,110,245,0);
-  transition: box-shadow 0.15s cubic-bezier(0.16,1,0.3,1),
-              transform  0.15s cubic-bezier(0.16,1,0.3,1);
-}
-
-input[type="range"]::-webkit-slider-thumb:hover {
-  box-shadow: 0 0 0 3px var(--accent-dim);
-  transform: scale(1.2);
-}
-
-input[type="range"]::-moz-range-thumb {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--text-primary);
-  border: none;
-  cursor: pointer;
-  transition: transform 0.15s cubic-bezier(0.16,1,0.3,1);
-}
-
-input[type="range"]::-moz-range-thumb:hover {
-  transform: scale(1.2);
-}
-
-/* ── Scrollbar ─────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 2px;
-}
-::-webkit-scrollbar-thumb:hover { background: #2a3040; }
-
-/* ── Utility ───────────────────────────────────────────────── */
-.section-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation-duration: 0.01ms !important; }
 }

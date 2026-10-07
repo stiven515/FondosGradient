@@ -24,7 +24,7 @@ describe('index.html', () => {
   })
 
   it('sets a theme color that matches the app background', () => {
-    expect(meta('name', 'theme-color')).toBe('#080A0D')
+    expect(meta('name', 'theme-color')).toBe('#E3E8EC')
   })
 
   it('has Open Graph and Twitter tags so shared links get a preview', () => {
