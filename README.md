@@ -60,3 +60,17 @@ Los valores inválidos se ignoran y los numéricos se limitan a su rango.
 ## Tecnologías
 
 React 18, TypeScript, Vite, Tailwind CSS, Zustand, WebGL 1 con shaders GLSL, Vitest y Testing Library.
+
+## Despliegue
+
+El proyecto es una app estática (Vite) lista para Vercel:
+
+1. Importa el repo en [vercel.com/new](https://vercel.com/new). Vercel detecta Vite solo: build `npm run build`, salida `dist`.
+2. No necesita variables de entorno. `vercel.json` agrega los headers de seguridad y la caché de los assets.
+3. Cada push a `main` despliega a producción y cada pull request genera un preview.
+
+El CI de GitHub Actions (lint, build y tests) corre en cada push y pull request.
+
+## Licencia
+
+[MIT](LICENSE)

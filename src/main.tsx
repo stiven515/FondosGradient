@@ -3,6 +3,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { useGradientStore } from './store/gradientStore'
 import { decodeUrlToState } from './utils/urlState'
 
@@ -23,6 +24,8 @@ if (urlState.aspectRatio)useGradientStore.getState().setAspectRatio(urlState.asp
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>
 )
