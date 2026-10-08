@@ -2,6 +2,24 @@
 
 Editor web para crear fondos de gradiente animados en tiempo real con WebGL. Incluye una landing con scroll y un estudio, en español e inglés. Elige un estilo, ajusta la paleta y los parámetros, aplica un efecto, y exporta un PNG o comparte el diseño con un link.
 
+![Landing de Gradient Studio, con el estilo Ribbon renderizado en vivo](docs/images/landing-hero.jpg)
+
+## Cómo se ve
+
+El estudio: panel de controles a la izquierda, canvas en vivo al centro y un dock inferior con paletas, looks y diseños guardados.
+
+![Estudio con el estilo Ribbon, parámetros y paletas](docs/images/studio.jpg)
+
+| Selector de estilos | Versión móvil |
+| --- | --- |
+| ![Lista de los 8 estilos con miniaturas renderizadas con el motor real](docs/images/studio-estilos.jpg) | <img src="docs/images/studio-movil.jpg" alt="Estudio en pantalla de móvil" width="260"> |
+
+La landing recorre los estilos, los efectos y las formas de exportar, todo con renders reales del motor:
+
+| Estilos | Efectos |
+| --- | --- |
+| ![Sección de estilos con el disco en vivo](docs/images/landing-styles.jpg) | ![Sección de efectos con renders reales](docs/images/landing-effects.jpg) |
+
 ## Funciones
 
 - **8 estilos animados:** Flow, Beam, Mesh, Liquid, Wave, Silk, Stripe y Ribbon (cintas de vidrio), con escala, curl, drift, openness, seed, velocidad y grain.
