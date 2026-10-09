@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ExportMenu } from './ExportMenu'
 import { useUiStore } from '../../store/uiStore'
@@ -23,7 +23,7 @@ describe('ExportMenu', () => {
     await user.click(trigger)
     expect(trigger).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByRole('radio', { name: 'PNG' })).toBeChecked()
-    expect(screen.getByRole('radio', { name: 'Current' })).toBeChecked()
+    expect(screen.getByRole('radio', { name: '2K' })).toBeChecked()
     await user.keyboard('{Escape}')
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
   })
@@ -32,9 +32,11 @@ describe('ExportMenu', () => {
     const user = userEvent.setup()
     render(<ExportMenu />)
     await user.click(screen.getByRole('button', { name: /^export/i }))
+    expect(screen.getByText('2560 × 1280 px')).toBeInTheDocument()
+    await user.click(screen.getByRole('radio', { name: 'Screen' }))
     expect(screen.getByText('1000 × 500 px')).toBeInTheDocument()
-    await user.click(screen.getByRole('radio', { name: '2×' }))
-    expect(screen.getByText('2000 × 1000 px')).toBeInTheDocument()
+    await user.click(screen.getByRole('radio', { name: 'HD' }))
+    expect(screen.getByText('1920 × 960 px')).toBeInTheDocument()
     await user.click(screen.getByRole('radio', { name: '4K' }))
     expect(screen.getByText('3840 × 1920 px')).toBeInTheDocument()
   })
@@ -45,10 +47,60 @@ describe('ExportMenu', () => {
     render(<ExportMenu />)
     await user.click(screen.getByRole('button', { name: /^export/i }))
     await user.click(screen.getByRole('radio', { name: 'WebP' }))
-    await user.click(screen.getByRole('radio', { name: '2×' }))
+    await user.click(screen.getByRole('radio', { name: 'HD' }))
     await user.click(screen.getByRole('button', { name: 'Download' }))
-    expect(spy).toHaveBeenCalledWith('webp', '2x')
+    expect(spy).toHaveBeenCalledWith('webp', { w: 1920, h: 960 }, 0.95)
     expect(useUiStore.getState().toasts.map(t => t.message)).toEqual(['Image exported'])
+  })
+
+  it('offers a quality control only for lossy formats and sends its value', async () => {
+    const user = userEvent.setup()
+    const spy = vi.spyOn(exportPng, 'exportImage').mockResolvedValue(true)
+    render(<ExportMenu />)
+    await user.click(screen.getByRole('button', { name: /^export/i }))
+    expect(screen.queryByRole('slider', { name: 'Quality' })).toBeNull()
+    await user.click(screen.getByRole('radio', { name: 'JPG' }))
+    const quality = screen.getByRole('slider', { name: 'Quality' })
+    fireEvent.change(quality, { target: { value: '80' } })
+    expect(screen.getByText('80%')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Download' }))
+    expect(spy).toHaveBeenCalledWith('jpg', { w: 2560, h: 1280 }, 0.8)
+  })
+
+  it('lets the person type a size, keeping the shape of the canvas by default', async () => {
+    const user = userEvent.setup()
+    const spy = vi.spyOn(exportPng, 'exportImage').mockResolvedValue(true)
+    render(<ExportMenu />)
+    await user.click(screen.getByRole('button', { name: /^export/i }))
+    await user.click(screen.getByRole('radio', { name: 'Custom' }))
+    // Starts from the size that was selected.
+    expect(screen.getByRole('spinbutton', { name: 'Width' })).toHaveValue(2560)
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Width' }), { target: { value: '1200' } })
+    expect(screen.getByRole('spinbutton', { name: 'Height' })).toHaveValue(600)
+    expect(screen.getByText('1200 × 600 px')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Download' }))
+    expect(spy).toHaveBeenCalledWith('png', { w: 1200, h: 600 }, 0.95)
+  })
+
+  it('changes the shape freely when the ratio is unlocked, and says the artwork is recomposed', async () => {
+    const user = userEvent.setup()
+    render(<ExportMenu />)
+    await user.click(screen.getByRole('button', { name: /^export/i }))
+    await user.click(screen.getByRole('radio', { name: 'Custom' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Keep ratio' }))
+    expect(screen.getByText(/recomposes the artwork/i)).toBeInTheDocument()
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Width' }), { target: { value: '1080' } })
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Height' }), { target: { value: '1920' } })
+    expect(screen.getByText('1080 × 1920 px')).toBeInTheDocument()
+  })
+
+  it('caps a typed size at the maximum edge', async () => {
+    const user = userEvent.setup()
+    render(<ExportMenu />)
+    await user.click(screen.getByRole('button', { name: /^export/i }))
+    await user.click(screen.getByRole('radio', { name: 'Custom' }))
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Width' }), { target: { value: '99999' } })
+    expect(screen.getByRole('spinbutton', { name: 'Width' })).toHaveValue(7680)
   })
 
   it('reports a failed export with an error toast', async () => {
@@ -123,6 +175,41 @@ describe('ExportMenu video', () => {
     finish('saved')
     await waitFor(() => expect(useUiStore.getState().toasts.map(t => t.message)).toContain('Video saved'))
     expect(screen.queryByRole('progressbar')).toBeNull()
+  })
+
+  it('records with the chosen size, frame rate, container and quality', async () => {
+    vi.stubGlobal('MediaRecorder', { isTypeSupported: () => true })
+    const user = userEvent.setup()
+    const spy = vi.spyOn(recordLoopModule, 'recordLoop').mockResolvedValue('saved')
+    render(<ExportMenu />)
+    await user.click(screen.getByRole('button', { name: /^export/i }))
+    await user.click(within(screen.getByRole('radiogroup', { name: 'Video size' })).getByRole('radio', { name: '2K' }))
+    await user.click(screen.getByRole('radio', { name: '30 fps' }))
+    await user.click(screen.getByRole('radio', { name: 'WEBM' }))
+    await user.click(within(screen.getByRole('radiogroup', { name: 'Video quality' })).getByRole('radio', { name: 'Max' }))
+    await user.click(screen.getByRole('button', { name: /record loop/i }))
+    expect(spy).toHaveBeenCalledWith(expect.any(Function), expect.any(AbortSignal), {
+      size: { w: 2560, h: 1280 }, fps: 30, format: 'webm', quality: 'max',
+    })
+  })
+
+  it('warns that 4K video is recorded in real time', async () => {
+    vi.stubGlobal('MediaRecorder', { isTypeSupported: () => true })
+    const user = userEvent.setup()
+    render(<ExportMenu />)
+    await user.click(screen.getByRole('button', { name: /^export/i }))
+    expect(screen.queryByText(/may drop frames/i)).toBeNull()
+    await user.click(within(screen.getByRole('radiogroup', { name: 'Video size' })).getByRole('radio', { name: '4K' }))
+    expect(screen.getByText(/may drop frames/i)).toBeInTheDocument()
+  })
+
+  it('only offers the containers the browser can record', async () => {
+    vi.stubGlobal('MediaRecorder', { isTypeSupported: (m: string) => m.includes('webm') })
+    const user = userEvent.setup()
+    render(<ExportMenu />)
+    await user.click(screen.getByRole('button', { name: /^export/i }))
+    expect(screen.queryByRole('radiogroup', { name: 'Container' })).toBeNull()
+    expect(screen.getByRole('button', { name: /record loop/i })).toBeInTheDocument()
   })
 
   it('cancels a recording in progress', async () => {

@@ -13,28 +13,70 @@ function pngSize(path: string) {
   return { w: bytes.readUInt32BE(16), h: bytes.readUInt32BE(20) }
 }
 
+const imageSize = (page: Page, name: string) =>
+  page.getByRole('radiogroup', { name: 'Size', exact: true }).getByRole('radio', { name })
+
 async function openExportMenu(page: Page) {
   await page.getByRole('button', { name: 'Export image' }).click()
 }
 
 test.describe('export', () => {
-  test('downloads a PNG at 2x the on-screen size and restores the preview afterwards', async ({ page }) => {
+  test('downloads a PNG at the on-screen size and restores the preview afterwards', async ({ page }) => {
     const problems = trackProblems(page)
     await openApp(page, `${STATIC_SCENE}&effect=glow&fx=0.5`)
     const before = await canvasSize(page)
 
     await openExportMenu(page)
-    await page.getByRole('radio', { name: '2×' }).check({ force: true })
+    await imageSize(page, 'Screen').check({ force: true })
     const [download] = await Promise.all([
       page.waitForEvent('download'),
       page.getByRole('button', { name: 'Download' }).click(),
     ])
 
     expect(download.suggestedFilename()).toMatch(/^gradient-studio-\d+\.png$/)
-    const size = pngSize(await download.path())
-    expect(size).toEqual({ w: before.w * 2, h: before.h * 2 })
+    expect(pngSize(await download.path())).toEqual(before)
     await expect(page.getByText('Image exported')).toBeVisible()
 
+    await expect.poll(() => canvasSize(page)).toEqual(before)
+    await expectNoProblems(page, problems)
+  })
+
+  test('exports at a named size without changing the shape of the canvas', async ({ page }) => {
+    const problems = trackProblems(page)
+    await openApp(page, `${STATIC_SCENE}&effect=glow&fx=0.5`)
+    const before = await canvasSize(page)
+
+    await openExportMenu(page)
+    await imageSize(page, 'HD').check({ force: true })
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'Download' }).click(),
+    ])
+
+    const size = pngSize(await download.path())
+    expect(Math.max(size.w, size.h)).toBe(1920)
+    expect(size.w / size.h).toBeCloseTo(before.w / before.h, 2)
+    await expect.poll(() => canvasSize(page)).toEqual(before)
+    await expectNoProblems(page, problems)
+  })
+
+  test('exports at a size typed by the person, exactly', async ({ page }) => {
+    const problems = trackProblems(page)
+    await openApp(page, `${STATIC_SCENE}&effect=grain&fx=0.5`)
+    const before = await canvasSize(page)
+
+    await openExportMenu(page)
+    await page.getByRole('radio', { name: 'Custom' }).check({ force: true })
+    await page.getByRole('checkbox', { name: 'Keep ratio' }).uncheck()
+    await page.getByRole('spinbutton', { name: 'Width' }).fill('1080')
+    await page.getByRole('spinbutton', { name: 'Height' }).fill('1920')
+    await expect(page.getByText('1080 × 1920 px')).toBeVisible()
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'Download' }).click(),
+    ])
+
+    expect(pngSize(await download.path())).toEqual({ w: 1080, h: 1920 })
     await expect.poll(() => canvasSize(page)).toEqual(before)
     await expectNoProblems(page, problems)
   })
@@ -44,6 +86,8 @@ test.describe('export', () => {
     for (const effect of ['glow', 'chromatic', 'glass', 'dither', 'halftone']) {
       await openApp(page, `${STATIC_SCENE}&effect=${effect}&fx=0.6`)
       await openExportMenu(page)
+      // On-screen size: the point here is that every effect compiles and exports, not how large the file is.
+      await imageSize(page, 'Screen').check({ force: true })
       const [download] = await Promise.all([
         page.waitForEvent('download'),
         page.getByRole('button', { name: 'Download' }).click(),
@@ -59,6 +103,7 @@ test.describe('export', () => {
     await openApp(page, `${STATIC_SCENE}&effect=none`)
     await openExportMenu(page)
     await page.getByRole('radio', { name: 'JPG' }).check({ force: true })
+    await page.getByRole('slider', { name: 'Quality' }).fill('80')
     const [download] = await Promise.all([
       page.waitForEvent('download'),
       page.getByRole('button', { name: 'Download' }).click(),
@@ -89,6 +134,9 @@ test.describe('export', () => {
       URL.createObjectURL = (b: Blob | MediaSource) => { w.__lastBlob = { type: (b as Blob).type, size: (b as Blob).size }; return create(b) }
       HTMLAnchorElement.prototype.click = function () { if (this.download) w.__saved.push({ name: this.download, ...w.__lastBlob }) }
     })
+    // The on-screen size keeps the real-time recording light for software-rendered CI browsers.
+    await page.getByRole('radiogroup', { name: 'Video size' }).getByRole('radio', { name: 'Screen' }).check({ force: true })
+    await page.getByRole('radio', { name: '30 fps' }).check({ force: true })
     await record.click()
     await expect.poll(
       () => page.evaluate(() => (window as unknown as { __saved: unknown[] }).__saved.length),

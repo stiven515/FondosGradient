@@ -27,7 +27,7 @@ La landing recorre los estilos, los efectos y las formas de exportar, todo con r
 - **6 efectos:** grain, glow, chromatic, glass, dither y halftone, con intensidad ajustable.
 - **Looks y diseños guardados:** 9 looks completos (estilo, paleta y efecto) y hasta 24 diseños propios guardados en el navegador.
 - **Timeline:** barra de progreso con scrubbing, duración de 5, 10, 20 o 30 s y loop sin cortes (excepto en Flow).
-- **Exportar y compartir:** descarga en PNG, JPG o WebP a tamaño actual, 2× o 4K, grabación de un loop en video (MP4 o WebM según el navegador), copia como CSS (linear o mesh), link con todo el estado, relación de aspecto (Free, 16:9, 4:3, 1:1, 9:16) y pantalla completa.
+- **Exportar y compartir:** imagen en PNG, JPG o WebP a HD, 2K, 4K, el tamaño de pantalla o un tamaño propio en píxeles (hasta 7680 px por lado), con control de calidad en JPG y WebP; grabación de un loop en video MP4 o WebM a 30 o 60 fps, hasta 4K y con calidad ajustable; copia como CSS (linear o mesh); link con todo el estado, relación de aspecto (Free, 16:9, 4:3, 1:1, 9:16) y pantalla completa.
 - **Accesible y responsive:** navegación completa con teclado, foco visible, respeta `prefers-reduced-motion` (arranca en pausa) y el panel de controles pasa a ser un drawer en pantallas estrechas.
 - **Bilingüe ES/EN:** selector de idioma en la landing y el estudio; las claves de traducción se validan en compilación.
 - **Undo/redo** y guardado automático en `localStorage`.
@@ -63,7 +63,7 @@ Los efectos y shaders se protegen en tres capas, porque cada una atrapa errores 
 
 1. **Unitarios (Vitest):** el registro de efectos, las curvas de intensidad y la lógica de la app.
 2. **Validación estática del GLSL:** todos los shaders se parsean en cada corrida y fallan ante errores de sintaxis, variables o funciones inexistentes, bucles no constantes y uniforms que no coinciden con lo que sube la app.
-3. **End-to-end (Playwright):** abre la app en un Chrome real, compila cada estilo y cada efecto en la GPU, comprueba que el efecto cambie la imagen y crezca con la intensidad, que el grain mantenga su tamaño en resoluciones grandes y que las exportaciones (PNG, JPG, video y CSS) funcionen.
+3. **End-to-end (Playwright):** abre la app en un Chrome real, compila cada estilo y cada efecto en la GPU, comprueba que el efecto cambie la imagen y crezca con la intensidad, que el grain mantenga su tamaño en resoluciones grandes y que las exportaciones (PNG con tamaño exacto, JPG, video y CSS) funcionen.
 
 Para correr los e2e en local sin descargar nada, usa el Chrome instalado:
 

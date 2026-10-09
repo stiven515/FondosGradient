@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { pickVideoMime, recordCanvas, videoExtension } from './recorder'
+import { pickVideoMime, pickMimeFor, recordCanvas, videoBitrate, videoExtension, warmUpRecorder } from './recorder'
 
 describe('pickVideoMime', () => {
   it('prefers MP4 when supported, then VP9 WebM', () => {
@@ -9,6 +9,32 @@ describe('pickVideoMime', () => {
 
   it('returns null when nothing is supported', () => {
     expect(pickVideoMime(() => false)).toBeNull()
+  })
+})
+
+describe('pickMimeFor', () => {
+  it('returns a supported mime of the requested container', () => {
+    expect(pickMimeFor('mp4', () => true)).toMatch(/^video\/mp4/)
+    expect(pickMimeFor('webm', () => true)).toMatch(/^video\/webm/)
+  })
+
+  it('returns null when that container is not supported', () => {
+    expect(pickMimeFor('mp4', m => m.includes('webm'))).toBeNull()
+    expect(pickMimeFor('webm', m => m.includes('mp4'))).toBeNull()
+  })
+})
+
+describe('videoBitrate', () => {
+  it('grows with picture size, frame rate and quality', () => {
+    const base = videoBitrate(1920, 1080, 30, 'normal')
+    expect(videoBitrate(3840, 2160, 30, 'normal')).toBeGreaterThan(base)
+    expect(videoBitrate(1920, 1080, 60, 'normal')).toBeGreaterThan(base)
+    expect(videoBitrate(1920, 1080, 30, 'max')).toBeGreaterThan(base)
+  })
+
+  it('stays inside a sane range for tiny and huge pictures', () => {
+    expect(videoBitrate(100, 100, 30, 'normal')).toBe(4_000_000)
+    expect(videoBitrate(7680, 4320, 60, 'max')).toBe(80_000_000)
   })
 })
 
@@ -22,6 +48,7 @@ describe('videoExtension', () => {
 
 class FakeRecorder {
   static last: FakeRecorder
+  static payload = 'x'.repeat(4096)
   ondataavailable: ((e: { data: Blob }) => void) | null = null
   onstop: (() => void) | null = null
   onerror: ((e: unknown) => void) | null = null
@@ -31,7 +58,7 @@ class FakeRecorder {
   start() { this.state = 'recording'; this.started = true }
   stop() {
     this.state = 'inactive'
-    this.ondataavailable?.({ data: new Blob(['chunk'], { type: this.options.mimeType }) })
+    this.ondataavailable?.({ data: new Blob([FakeRecorder.payload], { type: this.options.mimeType }) })
     this.onstop?.()
   }
 }
@@ -80,11 +107,37 @@ describe('recordCanvas', () => {
     expect(stopTrack).toHaveBeenCalled()
   })
 
+  it('rejects instead of delivering a video that holds no frames', async () => {
+    FakeRecorder.payload = 'h'.repeat(110)
+    try {
+      const promise = recordCanvas({ canvas, seconds: 1, mime: 'video/webm' })
+      const assertion = expect(promise).rejects.toThrow(/no frames/i)
+      await vi.advanceTimersByTimeAsync(1100)
+      await assertion
+      expect(stopTrack).toHaveBeenCalled()
+    } finally {
+      FakeRecorder.payload = 'x'.repeat(4096)
+    }
+  })
+
   it('rejects when the recorder reports an error', async () => {
     const promise = recordCanvas({ canvas, seconds: 5, mime: 'video/webm' })
     const assertion = expect(promise).rejects.toThrow(/recording failed/i)
     FakeRecorder.last.onerror?.({})
     await assertion
     expect(stopTrack).toHaveBeenCalled()
+  })
+})
+
+describe('warmUpRecorder', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('never rejects, even when the browser cannot record from a canvas', async () => {
+    vi.stubGlobal('MediaRecorder', FakeRecorder)
+    await expect(warmUpRecorder('video/webm')).resolves.toBeUndefined()
+  })
+
+  it('runs only once per session', () => {
+    expect(warmUpRecorder('video/webm')).toBe(warmUpRecorder('video/mp4'))
   })
 })

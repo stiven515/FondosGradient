@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
-  registerCanvas, getCanvas, computeExportSize, exportFileName, downloadBlob, exportImage, renderOverride,
+  registerCanvas, getCanvas, presetSize, clampSize, evenSize, MAX_EDGE, exportFileName, downloadBlob, exportImage, renderOverride,
 } from './exportPng'
 
 function fakeCanvas(blob: Blob | null, w = 800, h = 600) {
@@ -26,29 +26,46 @@ describe('canvas registry', () => {
   })
 })
 
-describe('computeExportSize', () => {
-  it('keeps the current size', () => {
-    expect(computeExportSize(800, 600, 'current')).toEqual({ w: 800, h: 600 })
+describe('presetSize', () => {
+  it('keeps the on-screen size for the screen preset', () => {
+    expect(presetSize(800, 600, 'screen')).toEqual({ w: 800, h: 600 })
   })
 
-  it('doubles both sides for 2x', () => {
-    expect(computeExportSize(800, 600, '2x')).toEqual({ w: 1600, h: 1200 })
+  it('makes the long edge the preset edge and keeps the shape (landscape, portrait, square)', () => {
+    expect(presetSize(1000, 500, 'hd')).toEqual({ w: 1920, h: 960 })
+    expect(presetSize(1080, 1920, '4k')).toEqual({ w: 2160, h: 3840 })
+    expect(presetSize(500, 500, '2k')).toEqual({ w: 2560, h: 2560 })
   })
 
-  it('scales the long edge to 3840 for 4K, preserving aspect ratio (landscape and portrait)', () => {
-    expect(computeExportSize(1920, 1080, '4k')).toEqual({ w: 3840, h: 2160 })
-    expect(computeExportSize(1080, 1920, '4k')).toEqual({ w: 2160, h: 3840 })
-    expect(computeExportSize(500, 500, '4k')).toEqual({ w: 3840, h: 3840 })
-  })
-
-  it('never exceeds 4096 on the long edge', () => {
-    const size = computeExportSize(3000, 2000, '2x')
-    expect(Math.max(size.w, size.h)).toBe(4096)
-    expect(size.w / size.h).toBeCloseTo(1.5, 1)
+  it('also scales down when the screen is already larger than the preset', () => {
+    expect(presetSize(5000, 2500, 'hd')).toEqual({ w: 1920, h: 960 })
   })
 
   it('never returns a zero-sized canvas', () => {
-    expect(computeExportSize(0, 0, 'current')).toEqual({ w: 1, h: 1 })
+    expect(presetSize(0, 0, 'screen')).toEqual({ w: 1, h: 1 })
+  })
+})
+
+describe('clampSize', () => {
+  it('rounds to whole pixels and keeps at least 1', () => {
+    expect(clampSize({ w: 100.6, h: 0.2 })).toEqual({ w: 101, h: 1 })
+  })
+
+  it('never exceeds the maximum edge, keeping the shape', () => {
+    const size = clampSize({ w: 20000, h: 10000 })
+    expect(Math.max(size.w, size.h)).toBe(MAX_EDGE)
+    expect(size.w / size.h).toBeCloseTo(2, 2)
+  })
+
+  it('accepts a lower limit', () => {
+    expect(clampSize({ w: 6000, h: 3000 }, 3840)).toEqual({ w: 3840, h: 1920 })
+  })
+})
+
+describe('evenSize', () => {
+  it('rounds odd sides down so video encoders accept them', () => {
+    expect(evenSize({ w: 1921, h: 1081 })).toEqual({ w: 1920, h: 1080 })
+    expect(evenSize({ w: 1, h: 1 })).toEqual({ w: 2, h: 2 })
   })
 })
 
@@ -95,20 +112,42 @@ describe('exportImage', () => {
       toBlob: (cb: (b: Blob | null) => void) => { seen.push(renderOverride.size); cb(new Blob(['x'], { type: 'image/png' })) },
     } as unknown as HTMLCanvasElement
     registerCanvas(canvas)
-    await expect(exportImage('png', '2x')).resolves.toBe(true)
+    await expect(exportImage('png', { w: 1600, h: 1200 })).resolves.toBe(true)
     expect(seen).toEqual([{ w: 1600, h: 1200 }])
     expect(renderOverride.size).toBeNull()
   })
 
+  it('passes the chosen quality to the encoder', async () => {
+    const qualities: unknown[] = []
+    const canvas = {
+      width: 800, height: 600,
+      toBlob: (cb: (b: Blob | null) => void, _type: string, quality: number) => { qualities.push(quality); cb(new Blob(['x'], { type: 'image/jpeg' })) },
+    } as unknown as HTMLCanvasElement
+    registerCanvas(canvas)
+    await exportImage('jpg', { w: 800, h: 600 }, 0.7)
+    expect(qualities).toEqual([0.7])
+  })
+
+  it('never renders beyond the maximum edge', async () => {
+    const seen: ({ w: number; h: number } | null)[] = []
+    const canvas = {
+      width: 800, height: 600,
+      toBlob: (cb: (b: Blob | null) => void) => { seen.push(renderOverride.size); cb(new Blob(['x'], { type: 'image/png' })) },
+    } as unknown as HTMLCanvasElement
+    registerCanvas(canvas)
+    await exportImage('png', { w: 30000, h: 15000 })
+    expect(Math.max(seen[0]!.w, seen[0]!.h)).toBe(MAX_EDGE)
+  })
+
   it('restores the on-screen size and reports failure when no image was produced', async () => {
     registerCanvas(fakeCanvas(null))
-    await expect(exportImage('jpg', '4k')).resolves.toBe(false)
+    await expect(exportImage('jpg', { w: 3840, h: 2160 })).resolves.toBe(false)
     expect(renderOverride.size).toBeNull()
   })
 
   it('reports failure when there is no canvas', async () => {
     const unregister = registerCanvas(fakeCanvas(null))
     unregister()
-    await expect(exportImage('png', 'current')).resolves.toBe(false)
+    await expect(exportImage('png', { w: 800, h: 600 })).resolves.toBe(false)
   })
 })
